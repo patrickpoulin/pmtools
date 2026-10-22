@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { METHODS } from './methods/registry'
+import { pageFor } from './routes'
 import { ThemeToggle } from './components/ThemeToggle'
 import { HomePage } from './pages/HomePage'
 import { BacklogPage } from './pages/BacklogPage'
@@ -13,6 +14,9 @@ const REPO_URL = 'https://github.com/patrickpoulin/pmtools'
 export function App() {
   const { pathname } = useLocation()
   useEffect(() => window.scrollTo(0, 0), [pathname])
+  useEffect(() => {
+    document.title = pageFor(pathname).title
+  }, [pathname])
 
   return (
     <>

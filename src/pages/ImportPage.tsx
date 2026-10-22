@@ -1,25 +1,26 @@
 import { useMemo } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../core/store'
 import { decodeShare } from '../core/io'
 import type { Backlog } from '../core/types'
 
-/** Landing page for share links (#/import?d=…). Asks before replacing the visitor's own backlog. */
+/** Landing page for share links (import/#d=…). Asks before replacing the visitor's own backlog. */
 export function ImportPage() {
-  const [params] = useSearchParams()
+  const { hash } = useLocation()
   const navigate = useNavigate()
   const current = useStore((s) => s.backlog)
   const replaceBacklog = useStore((s) => s.replaceBacklog)
 
   const result = useMemo((): { backlog?: Backlog; error?: string } => {
-    const d = params.get('d')
+    // Read raw: share data uses "+", which URL parameter parsing would turn into a space.
+    const d = hash.match(/^#d=(.+)$/)?.[1]
     if (!d) return { error: 'This link does not contain a backlog.' }
     try {
       return { backlog: decodeShare(d) }
     } catch (e) {
       return { error: (e as Error).message }
     }
-  }, [params])
+  }, [hash])
 
   if (!result.backlog) {
     return (

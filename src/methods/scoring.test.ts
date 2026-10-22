@@ -4,6 +4,7 @@ import { quadrantOf } from './impact-effort/scoring'
 import { MUST, WONT, effortBalance, parseCategory, rankMoscow, scopeChecks, suggestCuts } from './moscow/scoring'
 import { backlogToCsv, csvToItems, decodeShare, encodeShare, normalizeBacklog } from '../core/io'
 import { sampleBacklog } from '../core/sample'
+import { legacyHashTarget, pageFor } from '../routes'
 import { fillSampleScores } from '../core/store'
 import {
   defaultCriteria, effectiveScore, normalizeCriteria, rankWeighted, weightedScore,
@@ -176,5 +177,21 @@ describe('Weighted Scoring', () => {
     const filled = fillSampleScores(old)
     expect(filled.settings.weighted.criteria).toEqual(defaultCriteria())
     expect(rankWeighted(filled)[0].item.title).toBe('Onboarding checklist')
+  })
+})
+
+describe('clean URLs', () => {
+  it('sends old hash links to their clean paths, keeping share data in the hash', () => {
+    expect(legacyHashTarget('#/')).toBe('')
+    expect(legacyHashTarget('#/method/rice')).toBe('method/rice')
+    expect(legacyHashTarget('#/import?d=N4Ig+ab-c')).toBe('import/#d=N4Ig+ab-c')
+    expect(legacyHashTarget('#d=abc')).toBeNull()
+    expect(legacyHashTarget('')).toBeNull()
+  })
+  it('finds page titles with or without a trailing slash', () => {
+    expect(pageFor('/method/rice').title).toContain('RICE')
+    expect(pageFor('/method/rice/').title).toContain('RICE')
+    expect(pageFor('/').path).toBe('')
+    expect(pageFor('/nope').path).toBe('')
   })
 })

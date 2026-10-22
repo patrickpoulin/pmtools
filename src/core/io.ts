@@ -182,7 +182,7 @@ export function decodeShare(data: string): Backlog {
   return normalizeBacklog(JSON.parse(json))
 }
 
+/** The data goes after "#", which browsers never send to the server, so shared backlogs stay private. */
 export function shareUrl(b: Backlog) {
-  const { origin, pathname } = window.location
-  return `${origin}${pathname}#/import?d=${encodeShare(b)}`
+  return `${window.location.origin}${import.meta.env.BASE_URL}import/#d=${encodeShare(b)}`
 }

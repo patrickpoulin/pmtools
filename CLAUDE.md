@@ -13,7 +13,8 @@ Static React + TypeScript + Vite site for product prioritization (Impact vs Effo
 - **One shared backlog** (`src/core/store.ts`, zustand persisted to `localStorage` key `pmtools-backlog`). Every method scores the same items; scores live in `item.scores[methodId][fieldKey]` as numbers (even categorical ones like MoSCoW).
 - **Methods are plugins**: `src/methods/<id>/{scoring.ts, Chart.tsx, index.ts}` exporting a `MethodDef`, registered in `src/methods/registry.ts`. The method page, score table, Compare, CSV and PDF are generic over `MethodDef`. Optional `MethodDef` hooks (`guide`, `summary`, `wideChart`, `chartHint`, `showResultInTable`, `chartUsesItemNumbers`) customize the shared page; method-specific side panels are chosen by id in `src/pages/MethodPage.tsx`.
 - **Fields may be dynamic** (Weighted Scoring builds them from user criteria). Always read fields with `fieldsFor(method, backlog)`, never `method.fields` directly.
-- Routing uses `HashRouter` (GitHub Pages has no rewrites). Share links are `#/import?d=<lz-string>`.
+- **Clean URLs on GitHub Pages** (no rewrites available): `BrowserRouter` with basename `/pmtools`, and the `static-routes` plugin in `vite.config.ts` writes a copy of `index.html` for every path in `src/routes.ts` (with its own title, description and canonical link), plus `404.html` and `sitemap.xml`. **A new page needs an entry in `PAGES`** or a refresh on it shows GitHub's 404.
+- Share links are `import/#d=<lz-string>`. The data stays after `#` so it never reaches the server. Old hash links (`#/method/rice`, `#/import?d=…`) are redirected in `main.tsx` via `legacyHashTarget()`.
 
 ## Non-obvious rules
 
