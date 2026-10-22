@@ -5,7 +5,7 @@ Static React + TypeScript + Vite site for product prioritization (Impact vs Effo
 ## Commands
 
 - `npm run dev` → http://localhost:5173/pmtools/ (the `/pmtools/` base path is required)
-- `npm test` (Vitest, `src/methods/scoring.test.ts`), `npx tsc --noEmit`, `npm run build`
+- `npm test` (Vitest: scoring/IO/URL logic in `src/methods/scoring.test.ts`, source guards in `src/effects.test.ts`), `npx tsc --noEmit`, `npm run build`
 - Node 18 is installed locally, so stay on Vite 5 and avoid deps that need Node 20+. CI uses Node 20.
 
 ## Architecture
@@ -29,7 +29,7 @@ Static React + TypeScript + Vite site for product prioritization (Impact vs Effo
 - **Colors**: follow the dataviz palette in `src/styles.css` (`--series-1..8` categorical in fixed order, `--ord-*` ordinal for MoSCoW). Color follows the entity, not its position: Weighted Scoring criteria store a fixed `color` slot. Never add a hue outside the palette.
 - **Existing tests must keep passing unchanged** when adding features. Add tests for new scoring logic.
 - **Licensing**: AGPL-3.0-only with attribution terms in `NOTICE`. Never remove or weaken the author credit in the site footer (`App.tsx`) or the PDF footer (`exportPdf.ts`).
-- **`useEffect` bodies always use braces** (`useEffect(() => { … }, deps)`). An arrow that implicitly returns a value is treated by React as a cleanup function; newer browsers return a Promise from `window.scrollTo`, which crashed every navigation and blanked the app.
+- **`useEffect` bodies always use braces** (`useEffect(() => { … }, deps)`). An arrow that implicitly returns a value is treated by React as a cleanup function; newer browsers return a Promise from `window.scrollTo`, which crashed every navigation and blanked the app. No `async` effects either. `src/effects.test.ts` enforces both.
 - Don't use `window.alert/confirm/prompt` (destructive actions use an inline two-step confirm).
 
 ## Browser testing (Claude in Chrome)
