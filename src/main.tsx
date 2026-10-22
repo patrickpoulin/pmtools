@@ -13,7 +13,11 @@ if (legacy !== null) window.history.replaceState(null, '', base + legacy)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter basename={base.replace(/\/$/, '')}>
+    {/* Opt in to React Router v7 behaviour now: silences the upgrade warnings and eases the move to v7. */}
+    <BrowserRouter
+      basename={base.replace(/\/$/, '')}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <App />
     </BrowserRouter>
   </StrictMode>,
