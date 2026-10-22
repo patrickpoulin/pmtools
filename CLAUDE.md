@@ -14,6 +14,7 @@ Static React + TypeScript + Vite site for product prioritization (Impact vs Effo
 - **Methods are plugins**: `src/methods/<id>/{scoring.ts, Chart.tsx, index.ts}` exporting a `MethodDef`, registered in `src/methods/registry.ts`. The method page, score table, Compare, CSV and PDF are generic over `MethodDef`. Optional `MethodDef` hooks (`guide`, `summary`, `wideChart`, `chartHint`, `showResultInTable`, `chartUsesItemNumbers`) customize the shared page; method-specific side panels are chosen by id in `src/pages/MethodPage.tsx`.
 - **Fields may be dynamic** (Weighted Scoring builds them from user criteria). Always read fields with `fieldsFor(method, backlog)`, never `method.fields` directly.
 - **Clean URLs on GitHub Pages** (no rewrites available): `BrowserRouter` with basename `/pmtools`, and the `static-routes` plugin in `vite.config.ts` writes a copy of `index.html` for every path in `src/routes.ts` (with its own title, description and canonical link), plus `404.html` and `sitemap.xml`. **A new page needs an entry in `PAGES`** or a refresh on it shows GitHub's 404.
+- The router opts in to the React Router v7 future flags (`main.tsx`), so a move to v7 should mostly be a package bump.
 - Share links are `import/#d=<lz-string>`. The data stays after `#` so it never reaches the server. Old hash links (`#/method/rice`, `#/import?d=…`) are redirected in `main.tsx` via `legacyHashTarget()`.
 
 ## Non-obvious rules
@@ -28,6 +29,8 @@ Static React + TypeScript + Vite site for product prioritization (Impact vs Effo
 - **CSV**: fixed columns are in `CSV_SCORE_COLUMNS`; Weighted Scoring adds `weighted.<criterion name>` columns matched case-insensitively. MoSCoW categories are written as names.
 - **Colors**: follow the dataviz palette in `src/styles.css` (`--series-1..8` categorical in fixed order, `--ord-*` ordinal for MoSCoW). Color follows the entity, not its position: Weighted Scoring criteria store a fixed `color` slot. Never add a hue outside the palette.
 - **Existing tests must keep passing unchanged** when adding features. Add tests for new scoring logic.
+- **Search Console**: `index.html` carries the `google-site-verification` meta tag for the `https://patrickpoulin.github.io/pmtools/` property; it is copied to every route page. Never remove it (Google re-checks). The sitemap is generated from `PAGES` in `src/routes.ts`.
+- **Privacy promise**: the UI says data never leaves the browser and there is no tracking. Don't add analytics, cookies or third-party requests without updating that copy (and a consent banner for cookie-based tools); prefer cookieless analytics if asked.
 - **Licensing**: AGPL-3.0-only with attribution terms in `NOTICE`. Never remove or weaken the author credit in the site footer (`App.tsx`) or the PDF footer (`exportPdf.ts`).
 - **`useEffect` bodies always use braces** (`useEffect(() => { … }, deps)`). An arrow that implicitly returns a value is treated by React as a cleanup function; newer browsers return a Promise from `window.scrollTo`, which crashed every navigation and blanked the app. No `async` effects either. `src/effects.test.ts` enforces both.
 - Don't use `window.alert/confirm/prompt` (destructive actions use an inline two-step confirm).
