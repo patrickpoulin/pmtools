@@ -32,7 +32,9 @@ function NumberInput({ field, value, onChange, label }: {
   label: string
 }) {
   const [draft, setDraft] = useState(String(value))
-  useEffect(() => setDraft(String(value)), [value])
+  useEffect(() => {
+    setDraft(String(value))
+  }, [value])
   const valid = (v: number) =>
     Number.isFinite(v) && (field.min === undefined || v >= field.min) && (field.max === undefined || v <= field.max)
 

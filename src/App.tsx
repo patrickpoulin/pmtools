@@ -13,7 +13,10 @@ const REPO_URL = 'https://github.com/patrickpoulin/pmtools'
 
 export function App() {
   const { pathname } = useLocation()
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  // Braces matter: newer browsers return a Promise from scrollTo, and React would call it as a cleanup.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
   useEffect(() => {
     document.title = pageFor(pathname).title
   }, [pathname])

@@ -321,7 +321,9 @@ function BalancePanel() {
 /** Optional positive number; an empty field clears the capacity. */
 function CapacityInput({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
   const [draft, setDraft] = useState(value === null ? '' : String(value))
-  useEffect(() => setDraft(value === null ? '' : String(value)), [value])
+  useEffect(() => {
+    setDraft(value === null ? '' : String(value))
+  }, [value])
   return (
     <input
       type="number"
@@ -432,7 +434,9 @@ function CriteriaEditor() {
 /** Non-negative weight; keeps a draft so the field can be cleared and retyped. */
 function WeightInput({ value, label, onChange }: { value: number; label: string; onChange: (v: number) => void }) {
   const [draft, setDraft] = useState(String(value))
-  useEffect(() => setDraft(String(value)), [value])
+  useEffect(() => {
+    setDraft(String(value))
+  }, [value])
   return (
     <input
       type="number"

@@ -29,6 +29,7 @@ Static React + TypeScript + Vite site for product prioritization (Impact vs Effo
 - **Colors**: follow the dataviz palette in `src/styles.css` (`--series-1..8` categorical in fixed order, `--ord-*` ordinal for MoSCoW). Color follows the entity, not its position: Weighted Scoring criteria store a fixed `color` slot. Never add a hue outside the palette.
 - **Existing tests must keep passing unchanged** when adding features. Add tests for new scoring logic.
 - **Licensing**: AGPL-3.0-only with attribution terms in `NOTICE`. Never remove or weaken the author credit in the site footer (`App.tsx`) or the PDF footer (`exportPdf.ts`).
+- **`useEffect` bodies always use braces** (`useEffect(() => { … }, deps)`). An arrow that implicitly returns a value is treated by React as a cleanup function; newer browsers return a Promise from `window.scrollTo`, which crashed every navigation and blanked the app.
 - Don't use `window.alert/confirm/prompt` (destructive actions use an inline two-step confirm).
 
 ## Browser testing (Claude in Chrome)
