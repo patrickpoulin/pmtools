@@ -175,7 +175,7 @@ export const readyCount = (s: UserStory) => Object.values(investStatus(s)).filte
 export function storyMarkdown(title: string, s: UserStory): string {
   const lines = [`### ${title}`, '', storySentence(s)]
   const criteria = s.criteria.map(criterionText).filter(Boolean)
-  if (criteria.length) lines.push('', '**Acceptance criteria**', '', ...criteria.map((c) => `- [ ] ${c}`))
+  if (criteria.length) lines.push('', '**Acceptance Criteria**', '', ...criteria.map((c) => `- [ ] ${c}`))
   if (s.points !== null) lines.push('', `**Estimate:** ${s.points} ${s.points === 1 ? 'point' : 'points'}`)
   if (s.notes.trim()) lines.push('', '**Notes**', '', s.notes.trim())
   return lines.join('\n')

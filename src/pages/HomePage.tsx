@@ -34,7 +34,7 @@ export function HomePage() {
       </section>
 
       <section className="card">
-        <h2>Write user stories</h2>
+        <h2>Write User Stories</h2>
         <p className="muted small">
           Planning something new? Write it as a story the team can build and test: who it’s for, what they need and
           why, Given / When / Then acceptance criteria, and an INVEST check that flags common problems as you type.
@@ -43,25 +43,25 @@ export function HomePage() {
       </section>
 
       <section className="card">
-        <h2>How it works</h2>
+        <h2>How It Works</h2>
         <div className="grid-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <div>
-            <h3>1. List your ideas</h3>
+            <h3>1. List Your Ideas</h3>
             <p className="muted small">Type them in, paste from a spreadsheet as CSV, or open a link from a teammate.</p>
           </div>
           <div>
-            <h3>2. Score and visualize</h3>
+            <h3>2. Score and Visualize</h3>
             <p className="muted small">Each method has its own inputs and chart. Compare methods to find where they disagree.</p>
           </div>
           <div>
-            <h3>3. Decide and share</h3>
+            <h3>3. Decide and Share</h3>
             <p className="muted small">Write down your decision and export a PDF with the chart, scores and reasoning.</p>
           </div>
         </div>
       </section>
 
       <section className="card">
-        <h2>Private by design</h2>
+        <h2>Private by Design</h2>
         <p className="muted small" style={{ margin: 0 }}>
           There are no accounts and no server. Everything you enter stays in your browser’s local storage, and PDFs
           are created on your device. Share links carry the backlog inside the URL itself.
