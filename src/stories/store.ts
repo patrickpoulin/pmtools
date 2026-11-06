@@ -1,10 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { newId } from '../core/store'
-import { emptyStory, hasStory, normalizeStory, type StoryDoc } from './story'
+import { emptyStory, exampleStory, hasStory, normalizeStory, type StoryDoc } from './story'
 
 interface StoriesState {
   stories: StoryDoc[]
+  /** True once the example story has been added, so deleting it keeps it deleted. */
+  seeded: boolean
   addStory: (story?: Partial<Omit<StoryDoc, 'id'>>) => string
   updateStory: (id: string, patch: Partial<Omit<StoryDoc, 'id'>>) => void
   removeStory: (id: string) => void
@@ -46,10 +48,14 @@ export function normalizeStoryDocs(raw: unknown): StoryDoc[] {
   })
 }
 
+/** The example story goes at the end of the list, so a user's own stories stay first. */
+export const withExample = (stories: StoryDoc[]): StoryDoc[] => [...stories, { ...exampleStory(), id: 'example' }]
+
 export const useStories = create<StoriesState>()(
   persist(
     (set) => ({
-      stories: [],
+      stories: withExample([]),
+      seeded: true,
       addStory: (story) => {
         const id = newId()
         set((s) => ({ stories: [{ ...emptyStory(), title: 'Untitled story', ...story, id }, ...s.stories] }))
@@ -63,8 +69,9 @@ export const useStories = create<StoriesState>()(
       name: 'pmtools-stories',
       version: 1,
       merge: (persisted, current) => {
-        const stories = (persisted as Partial<StoriesState> | undefined)?.stories
-        return { ...current, stories: stories ? normalizeStoryDocs(stories) : legacyStories() }
+        const p = persisted as Partial<StoriesState> | undefined
+        const stories = p?.stories ? normalizeStoryDocs(p.stories) : legacyStories()
+        return { ...current, stories: p?.seeded ? stories : withExample(stories), seeded: true }
       },
     },
   ),

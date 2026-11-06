@@ -200,7 +200,7 @@ export function normalizeStory(raw: unknown): UserStory | null {
 
 /** A finished example, to show what a good story looks like. */
 export const exampleStory = (): Omit<StoryDoc, 'id'> => ({
-  title: 'Onboarding checklist (example)',
+  title: 'Example: Onboarding checklist',
   role: 'new workspace admin',
   want: 'a short checklist of setup steps after I sign up',
   benefit: 'I can get my team to their first useful report without booking a call with support',

@@ -278,13 +278,13 @@ details.about ul { padding-left: 1.2em; margin: 6px 0 12px; }
 .story-list h2 { padding: 0 8px; }
 .story-list ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 @media (max-width: 900px) { .story-list ol { max-height: 240px; overflow-y: auto; } }
-.story-list button {
+.story-list ol button {
   display: flex; gap: 8px; align-items: flex-start; width: 100%; text-align: left; font: inherit; font-size: 0.9rem;
   color: var(--text-primary); background: transparent; border: 0; border-radius: 6px; padding: 6px 8px; cursor: pointer;
 }
-.story-list button:hover { background: var(--surface-2); }
-.story-list button.active { background: var(--accent-soft); }
-.story-list button:focus-visible { outline: 2px solid var(--accent); }
+.story-list ol button:hover { background: var(--surface-2); }
+.story-list ol button.active { background: var(--accent-soft); }
+.story-list ol button:focus-visible { outline: 2px solid var(--accent); }
 .story-list .dot-num { flex: none; margin-top: 1px; }
 .story-list-title { display: flex; flex-direction: column; min-width: 0; }
 .story-parts { display: grid; gap: 16px; }
@@ -323,3 +323,18 @@ details.about ul { padding-left: 1.2em; margin: 6px 0 12px; }
 .invest-status { font-weight: 700; color: var(--text-muted); }
 .invest-ok .invest-status { color: var(--accent-ink); }
 .invest-warn .invest-status { color: var(--danger); }
+.story-guide-link {
+  display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; font: inherit; font-size: 0.9rem; font-weight: 600;
+  color: var(--text-primary); background: transparent; border: 0; border-radius: 6px; padding: 8px; cursor: pointer;
+  margin-bottom: 12px;
+}
+.story-guide-link span {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 12px;
+  background: var(--surface-2); color: var(--accent-ink);
+}
+.story-guide-link:hover { background: var(--surface-2); }
+.story-guide-link.active { background: var(--accent-soft); color: var(--accent-ink); }
+.story-guide-link:focus-visible { outline: 2px solid var(--accent); }
+.story-list-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 8px 0; border-top: 1px solid var(--border); margin-bottom: 8px; }
+.story-list-head h2 { margin: 0; padding: 0; }
+.story-list-head .btn { padding: 4px 10px; }
