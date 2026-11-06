@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useStore } from '../core/store'
 import { downloadBlob } from '../core/io'
-import { useStories } from '../stories/store'
+import { EXAMPLE_ID, useStories } from '../stories/store'
 import {
   INVEST, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, hasStory, investStatus,
   readyCount, storyHints, storyMarkdown, storySentence, type AcceptanceCriterion, type StoryDoc, type UserStory,
@@ -11,7 +11,7 @@ import {
 const STATUS_ICON = { ok: '✓', warn: '⚠', todo: '○' } as const
 
 export function StoriesPage() {
-  const { stories, addStory, removeStory } = useStories()
+  const { stories, addStory, removeStory, restoreExample } = useStories()
   const [params, setParams] = useSearchParams()
   const showGuide = params.has('guide') || !stories.length
   const selected = showGuide ? undefined : stories.find((s) => s.id === params.get('story')) ?? stories[0]
@@ -93,7 +93,17 @@ export function StoriesPage() {
             }}
           />
         ) : (
-          <StoryGuide onStart={() => select(addStory())} />
+          <StoryGuide
+            onStart={() => select(addStory())}
+            onExample={
+              stories.some((s) => s.id === EXAMPLE_ID)
+                ? undefined
+                : () => {
+                    restoreExample()
+                    select(EXAMPLE_ID)
+                  }
+            }
+          />
         )}
       </div>
     </div>
@@ -351,12 +361,15 @@ const SPLITS: [string, string][] = [
 ]
 
 /** Plain explainer of what makes a good story, shown below the editor. */
-function StoryGuide({ onStart }: { onStart: () => void }) {
+function StoryGuide({ onStart, onExample }: { onStart: () => void; onExample?: () => void }) {
   return (
     <div className="card">
       <div className="page-head" style={{ marginBottom: 12 }}>
         <h2 style={{ margin: 0 }}>How to write a good user story</h2>
-        <button className="btn primary" onClick={onStart}>Start a new story</button>
+        <div className="btn-row">
+          {onExample && <button className="btn" onClick={onExample}>Add the example story</button>}
+          <button className="btn primary" onClick={onStart}>Start a new story</button>
+        </div>
       </div>
       <p>
         A user story is a short description of a change from the point of view of the person who benefits. It is a

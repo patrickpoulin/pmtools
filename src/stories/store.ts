@@ -10,6 +10,8 @@ interface StoriesState {
   addStory: (story?: Partial<Omit<StoryDoc, 'id'>>) => string
   updateStory: (id: string, patch: Partial<Omit<StoryDoc, 'id'>>) => void
   removeStory: (id: string) => void
+  /** Puts the example story back at the end of the list if it was deleted. */
+  restoreExample: () => void
 }
 
 /**
@@ -49,7 +51,8 @@ export function normalizeStoryDocs(raw: unknown): StoryDoc[] {
 }
 
 /** The example story goes at the end of the list, so a user's own stories stay first. */
-export const withExample = (stories: StoryDoc[]): StoryDoc[] => [...stories, { ...exampleStory(), id: 'example' }]
+export const EXAMPLE_ID = 'example'
+export const withExample = (stories: StoryDoc[]): StoryDoc[] => [...stories, { ...exampleStory(), id: EXAMPLE_ID }]
 
 export const useStories = create<StoriesState>()(
   persist(
@@ -64,6 +67,8 @@ export const useStories = create<StoriesState>()(
       updateStory: (id, patch) =>
         set((s) => ({ stories: s.stories.map((st) => (st.id === id ? { ...st, ...patch } : st)) })),
       removeStory: (id) => set((s) => ({ stories: s.stories.filter((st) => st.id !== id) })),
+      restoreExample: () =>
+        set((s) => (s.stories.some((st) => st.id === EXAMPLE_ID) ? s : { stories: withExample(s.stories) })),
     }),
     {
       name: 'pmtools-stories',

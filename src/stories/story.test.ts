@@ -3,7 +3,7 @@ import {
   article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
   storyHints, storyMarkdown, storySentence, type UserStory,
 } from './story'
-import { normalizeStoryDocs, storiesFromBacklogItems, withExample } from './store'
+import { normalizeStoryDocs, storiesFromBacklogItems, useStories, withExample } from './store'
 import { pdfText } from '../pdf/exportStories'
 
 const good = (): UserStory => ({
@@ -132,5 +132,18 @@ describe('example and PDF text', () => {
   it('keeps PDF text inside WinAnsi', () => {
     expect(pdfText('As a café owner → “fast” ✓')).toBe('As a café owner -> “fast” v')
     expect(pdfText('Łódź 東京 🚀 ok')).toBe('Lódz ??  ok')
+  })
+})
+
+describe('restoreExample', () => {
+  it('brings back a deleted example once, at the end of the list', () => {
+    const { addStory, removeStory, restoreExample } = useStories.getState()
+    removeStory('example')
+    addStory({ title: 'Mine' })
+    restoreExample()
+    restoreExample()
+    const titles = useStories.getState().stories.map((s) => s.title)
+    expect(titles.filter((t) => t.startsWith('Example')).length).toBe(1)
+    expect(titles[titles.length - 1]).toMatch(/^Example/)
   })
 })
