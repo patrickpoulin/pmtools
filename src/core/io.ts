@@ -3,7 +3,6 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 import type { Backlog, Criterion, Item, MethodId, MethodScores } from './types'
 import { emptyBacklog } from './sample'
 import { newId } from './store'
-import { normalizeStory } from '../stories/story'
 import { categoryName, parseCategory } from '../methods/moscow/scoring'
 import { SCALE_MAX, SCALE_MIN, criteriaOf, defaultCriteria, normalizeCriteria } from '../methods/weighted/scoring'
 
@@ -16,12 +15,6 @@ const num = (v: unknown) => {
 }
 
 const positive = (n: number | undefined) => (n !== undefined && n > 0 ? n : null)
-
-/** Only set when present, so files from before stories existed still get the sample's stories. */
-function storyField(raw: unknown): Pick<Item, 'story'> {
-  const story = normalizeStory(raw)
-  return story === undefined ? {} : { story }
-}
 
 /** Coerce untrusted JSON (file upload, share link) into a valid Backlog. */
 export function normalizeBacklog(raw: unknown): Backlog {
@@ -48,7 +41,6 @@ export function normalizeBacklog(raw: unknown): Backlog {
       description: str(it?.description).slice(0, 2000),
       tags: Array.isArray(it?.tags) ? it.tags.filter((t: unknown) => typeof t === 'string').slice(0, 20) : [],
       scores,
-      ...storyField(it?.story),
     }
   })
   const ie = r.settings?.impactEffort ?? {}

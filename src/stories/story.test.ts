@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  article, cleanPart, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
+  article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
   storyHints, storyMarkdown, storySentence, type UserStory,
 } from './story'
-import { normalizeBacklog } from '../core/io'
-import { sampleBacklog } from '../core/sample'
-import { fillSampleScores } from '../core/store'
+import { normalizeStoryDocs, storiesFromBacklogItems } from './store'
 
 const good = (): UserStory => ({
   role: 'finance approver',
@@ -95,23 +93,31 @@ describe('saved stories', () => {
     expect(s.criteria).toEqual([{ given: '', when: '', then: 'ok' }])
     expect(s.points).toBeNull()
     expect(s.invest).toEqual({ valuable: true })
-    expect(normalizeStory(undefined)).toBeUndefined()
+    expect(normalizeStory(undefined)).toBeNull()
     expect(normalizeStory('nope')).toBeNull()
   })
-  it('round-trips through a backlog file, keeping cleared stories cleared', () => {
-    const b = sampleBacklog()
-    b.items[0].story = null
-    const back = normalizeBacklog(JSON.parse(JSON.stringify(b)))
-    expect(back.items[1].story).toEqual(b.items[1].story)
-    expect(back.items[0].story).toBeNull()
-    expect('story' in back.items[2]).toBe(false)
+  it('keeps saved stories, giving duplicate or missing ids new ones', () => {
+    const docs = normalizeStoryDocs([{ ...good(), id: 'a', title: 'One' }, { ...good(), id: 'a', title: 'Two' }, 'junk', { ...good() }])
+    expect(docs.map((d) => d.title)).toEqual(['One', 'Two', 'Untitled story'])
+    expect(new Set(docs.map((d) => d.id)).size).toBe(3)
+    expect(docs[0].id).toBe('a')
+    expect(normalizeStoryDocs('nope')).toEqual([])
   })
-  it('backfills sample stories for backlogs saved before stories, but not over a cleared one', () => {
-    const b = sampleBacklog()
-    for (const it of b.items) delete it.story
-    b.items[3].story = null
-    const filled = fillSampleScores(b)
-    expect(filled.items[1].story?.role).toBe('new workspace admin')
-    expect(filled.items[3].story).toBeNull()
+  it('brings over stories written on backlog items, but not the sample examples', () => {
+    const moved = storiesFromBacklogItems([
+      { id: 'sample-2', title: 'Onboarding checklist', story: good() },
+      { id: 'x1', title: 'Approvals', story: good() },
+      { id: 'x2', title: 'Cleared', story: null },
+      { id: 'x3', title: 'Empty', story: emptyStory() },
+      { id: 'x4', title: 'No story' },
+    ])
+    expect(moved.map((m) => m.title)).toEqual(['Approvals'])
+    expect(moved[0].role).toBe('finance approver')
+    expect(storiesFromBacklogItems(undefined)).toEqual([])
+  })
+  it('has an example that passes every check', () => {
+    const ex = exampleStory()
+    expect(storyHints(ex)).toEqual([])
+    expect(readyCount(ex)).toBe(6)
   })
 })
