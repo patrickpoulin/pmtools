@@ -20,13 +20,13 @@ Static React + TypeScript + Vite site for product prioritization (Impact vs Effo
 ## Non-obvious rules
 
 - **Charts render twice**: on screen (CSS-variable palette) and in the PDF via `renderToStaticMarkup` + `svg2pdf.js` (hex palette). Put colors and fonts in `style={{ ... }}` using palette values. `exportPdf.ts` converts inline styles to SVG attributes because svg2pdf ignores `style`. Palette fonts for print must be lowercase `helvetica`.
-- **PDF text is WinAnsi only** (jsPDF built-in fonts). Characters like `→ ≤ ≈ Σ` render as garbage. Keep them out of chart SVG text, method `formula`/`reference`/`summary` strings, and anything printed. Everything printed (including chart text) goes through `pdfSafe()` in `src/pdf/text.ts`, which spells out common symbols and drops what it can't map (emoji), so a missing mapping loses the character rather than garbling it.
+- **PDF text is WinAnsi only** (jsPDF built-in fonts). Characters like `→ ≤ ≈ Σ` render as garbage. Keep them out of chart SVG text, method `formula`/`reference`/`summary` strings, and anything printed. Everything printed (including chart text) goes through `pdfSafe()` in `src/pdf/text.ts`, which spells out common symbols, shows unsupported letters (Cyrillic, CJK) as `?` and drops emoji, rather than garbling them.
 - **Backward compatibility of saved data**: users have old backlogs in `localStorage`, JSON files and share links. When adding settings or a method:
   - add defaults in `emptyBacklog()` and sample data in `src/core/sample.ts`;
   - validate untrusted input in `normalizeBacklog()` (`src/core/io.ts`), including the new id in `METHOD_IDS`;
   - `fillSampleScores()` (`store.ts`) backfills missing settings and sample-item scores on load and on `replaceBacklog`; never overwrite values the user set.
   - Code reading new settings should tolerate them being missing (e.g. `criteriaOf()`).
-  - Imported scores are fitted to each field's range and options (`fitToField()`), so add a new method's fields to `FIXED_FIELDS` in `io.ts` (without it, its scores are imported unchecked).
+  - Imported scores are fitted to each field's range and options (`fitToField()`), so a new method needs an entry in `FIXED_FIELDS` in `io.ts` (the type requires it).
 - **CSV**: fixed columns are in `CSV_SCORE_COLUMNS`; Weighted Scoring adds `weighted.<criterion name>` columns matched case-insensitively. MoSCoW categories are written as names.
 - **Colors**: follow the dataviz palette in `src/styles.css` (`--series-1..8` categorical in fixed order, `--ord-*` ordinal for MoSCoW). Color follows the entity, not its position: Weighted Scoring criteria store a fixed `color` slot. Never add a hue outside the palette.
 - **Existing tests must keep passing unchanged** when adding features. Add tests for new scoring logic.
