@@ -8,11 +8,10 @@ const SHARE_URL_WARN = 8000
 
 export function BacklogActions() {
   const backlog = useStore((s) => s.backlog)
-  const { replaceBacklog, addItem, loadSample, clear } = useStore()
+  const { replaceBacklog, addItem } = useStore()
   const jsonRef = useRef<HTMLInputElement>(null)
   const csvRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null)
-  const [confirmClear, setConfirmClear] = useState(false)
 
   const readFile = (e: ChangeEvent<HTMLInputElement>, handle: (text: string) => void) => {
     const file = e.target.files?.[0]
@@ -56,19 +55,6 @@ export function BacklogActions() {
         <button className="btn" onClick={() => downloadBlob(backlogToCsv(backlog), `${base}.csv`, 'text/csv')}>
           Export CSV
         </button>
-        <button className="btn ghost" onClick={() => { loadSample(); setMsg({ text: 'Sample backlog loaded.' }) }}>
-          Load sample
-        </button>
-        {confirmClear ? (
-          <>
-            <button className="btn danger" onClick={() => { clear(); setConfirmClear(false); setMsg({ text: 'Backlog cleared.' }) }}>
-              Yes, delete all items
-            </button>
-            <button className="btn ghost" onClick={() => setConfirmClear(false)}>Cancel</button>
-          </>
-        ) : (
-          <button className="btn ghost danger" onClick={() => setConfirmClear(true)}>Clear all</button>
-        )}
       </div>
       <input
         ref={jsonRef} type="file" accept=".json,application/json" hidden
