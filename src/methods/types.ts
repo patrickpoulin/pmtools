@@ -85,3 +85,13 @@ export function scoresFor(item: Item, method: { id: MethodId; fields: FieldDef[]
   const s = item.scores[method.id] ?? {}
   return Object.fromEntries(method.fields.map((f) => [f.key, s[f.key] ?? f.defaultValue]))
 }
+
+/**
+ * Fit an untrusted value (file, share link, CSV) to what the field's input can show: numbers are
+ * clamped to its range, and a select keeps only one of its options (undefined = use the default).
+ */
+export function fitToField(field: FieldDef, v: number): number | undefined {
+  if (!Number.isFinite(v)) return undefined
+  if (field.kind === 'select') return field.options?.some((o) => o.value === v) ? v : undefined
+  return Math.min(field.max ?? Infinity, Math.max(field.min ?? -Infinity, v))
+}

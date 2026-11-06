@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useStore } from '../core/store'
 import { criteriaOf } from '../methods/weighted/scoring'
+import type { Backlog } from '../core/types'
 import { backlogToCsv, backlogToJson, csvToItems, downloadBlob, normalizeBacklog, shareUrl, slugify } from '../core/io'
 
 /** Long URLs get truncated by some chat apps and browsers. */
@@ -12,7 +13,8 @@ export function BacklogActions() {
   const jsonRef = useRef<HTMLInputElement>(null)
   const csvRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null)
-  const [confirmClear, setConfirmClear] = useState(false)
+  // Actions that replace the whole backlog wait here for a second click.
+  const [pending, setPending] = useState<{ text: string; label: string; run: () => void } | null>(null)
 
   const readFile = (e: ChangeEvent<HTMLInputElement>, handle: (text: string) => void) => {
     const file = e.target.files?.[0]
@@ -43,6 +45,24 @@ export function BacklogActions() {
   }
 
   const base = slugify(backlog.name)
+  const current = `“${backlog.name}” (${backlog.items.length} ${backlog.items.length === 1 ? 'item' : 'items'})`
+
+  /** Runs `run` straight away when there is nothing to lose, otherwise asks first. */
+  const confirmReplace = (text: string, label: string, run: () => void) => {
+    setMsg(null)
+    if (backlog.items.length) setPending({ text, label, run })
+    else run()
+  }
+
+  const loadSampleBacklog = () => {
+    loadSample()
+    setMsg({ text: 'Sample backlog loaded.' })
+  }
+
+  const openJson = (b: Backlog) => {
+    replaceBacklog(b)
+    setMsg({ text: `Opened "${b.name}" with ${b.items.length} items.` })
+  }
 
   return (
     <div className="stack">
@@ -56,26 +76,51 @@ export function BacklogActions() {
         <button className="btn" onClick={() => downloadBlob(backlogToCsv(backlog), `${base}.csv`, 'text/csv')}>
           Export CSV
         </button>
-        <button className="btn ghost" onClick={() => { loadSample(); setMsg({ text: 'Sample backlog loaded.' }) }}>
+        <button
+          className="btn ghost"
+          onClick={() => confirmReplace(
+            `Loading the sample replaces your current backlog, ${current}. Save it as JSON first if you want to keep it.`,
+            'Yes, load the sample',
+            loadSampleBacklog,
+          )}
+        >
           Load sample
         </button>
-        {confirmClear ? (
-          <>
-            <button className="btn danger" onClick={() => { clear(); setConfirmClear(false); setMsg({ text: 'Backlog cleared.' }) }}>
-              Yes, delete all items
-            </button>
-            <button className="btn ghost" onClick={() => setConfirmClear(false)}>Cancel</button>
-          </>
-        ) : (
-          <button className="btn ghost danger" onClick={() => setConfirmClear(true)}>Clear all</button>
-        )}
+        <button
+          className="btn ghost danger"
+          onClick={() => {
+            setMsg(null)
+            setPending({
+              text: `This deletes every item in ${current}. It can’t be undone.`,
+              label: 'Yes, delete all items',
+              run: () => {
+                clear()
+                setMsg({ text: 'Backlog cleared.' })
+              },
+            })
+          }}
+        >
+          Clear all
+        </button>
       </div>
+      {pending && (
+        <div className="notice error" role="alert">
+          <span>{pending.text}</span>
+          <div className="btn-row" style={{ marginTop: 10 }}>
+            <button className="btn danger" onClick={() => { pending.run(); setPending(null) }}>{pending.label}</button>
+            <button className="btn ghost" onClick={() => setPending(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
       <input
         ref={jsonRef} type="file" accept=".json,application/json" hidden
         onChange={(e) => readFile(e, (t) => {
           const b = normalizeBacklog(JSON.parse(t))
-          replaceBacklog(b)
-          setMsg({ text: `Opened "${b.name}" with ${b.items.length} items.` })
+          confirmReplace(
+            `Opening “${b.name}” (${b.items.length} items) replaces your current backlog, ${current}. Save it as JSON first if you want to keep it.`,
+            'Yes, open the file',
+            () => openJson(b),
+          )
         })}
       />
       <input
