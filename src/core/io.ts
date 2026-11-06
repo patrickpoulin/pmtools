@@ -1,10 +1,13 @@
 import Papa from 'papaparse'
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
-import type { Backlog, Criterion, Item, MethodId, MethodScores } from './types'
+import type { Backlog, Criterion, FieldDef, Item, MethodId, MethodScores } from './types'
 import { emptyBacklog } from './sample'
 import { newId } from './store'
 import { normalizeStory } from '../stories/story'
-import { categoryName, parseCategory } from '../methods/moscow/scoring'
+import { fitToField } from '../methods/types'
+import { IE_FIELDS } from '../methods/impact-effort/scoring'
+import { RICE_FIELDS } from '../methods/rice/scoring'
+import { MOSCOW_FIELDS, categoryName, parseCategory } from '../methods/moscow/scoring'
 import { SCALE_MAX, SCALE_MIN, criteriaOf, defaultCriteria, normalizeCriteria } from '../methods/weighted/scoring'
 
 const METHOD_IDS: MethodId[] = ['impact-effort', 'rice', 'moscow', 'weighted']
@@ -16,6 +19,26 @@ const num = (v: unknown) => {
 }
 
 const positive = (n: number | undefined) => (n !== undefined && n > 0 ? n : null)
+
+/** Fields with a fixed range. Weighted Scoring keys are criterion ids, all on the same 1–5 scale. */
+const FIXED_FIELDS: Record<Exclude<MethodId, 'weighted'>, FieldDef[]> = {
+  'impact-effort': IE_FIELDS,
+  rice: RICE_FIELDS,
+  moscow: MOSCOW_FIELDS,
+}
+const WEIGHTED_FIELD: FieldDef = { key: '', label: '', help: '', kind: 'number', min: SCALE_MIN, max: SCALE_MAX, defaultValue: 3 }
+
+/** A score as the field's input could show it, or undefined to drop it (unknown key, invalid option). */
+function cleanScore(m: MethodId, key: string, v: number | undefined): number | undefined {
+  if (v === undefined) return undefined
+  if (m === 'weighted') return fitToField(WEIGHTED_FIELD, v)
+  const field = FIXED_FIELDS[m].find((f) => f.key === key)
+  return field ? fitToField(field, v) : undefined
+}
+
+/** A quadrant divider on its slider: 1.5 to 9.5 in steps of 0.5. */
+const divider = (n: number | undefined, fallback: number) =>
+  n === undefined ? fallback : Math.min(9.5, Math.max(1.5, Math.round(n * 2) / 2))
 
 /** Only set when present, so files from before stories existed still get the sample's stories. */
 function storyField(raw: unknown): Pick<Item, 'story'> {
@@ -29,6 +52,7 @@ export function normalizeBacklog(raw: unknown): Backlog {
   const r = raw as Record<string, any>
   if (!Array.isArray(r.items)) throw new Error('Backlog has no "items" list.')
   const base = emptyBacklog()
+  const ids = new Set<string>()
   const items: Item[] = r.items.slice(0, 500).map((it: any) => {
     const scores: Item['scores'] = {}
     for (const m of METHOD_IDS) {
@@ -36,14 +60,18 @@ export function normalizeBacklog(raw: unknown): Backlog {
       if (src && typeof src === 'object') {
         const clean: MethodScores = {}
         for (const [k, v] of Object.entries(src)) {
-          const n = num(v)
+          const n = cleanScore(m, k, num(v))
           if (n !== undefined) clean[k] = n
         }
         scores[m] = clean
       }
     }
+    // Ids must be unique: items sharing one would be edited and deleted together.
+    let id = str(it?.id)
+    if (!id || ids.has(id)) id = newId()
+    ids.add(id)
     return {
-      id: str(it?.id) || newId(),
+      id,
       title: str(it?.title, 'Untitled').slice(0, 200),
       description: str(it?.description).slice(0, 2000),
       tags: Array.isArray(it?.tags) ? it.tags.filter((t: unknown) => typeof t === 'string').slice(0, 20) : [],
@@ -61,8 +89,8 @@ export function normalizeBacklog(raw: unknown): Backlog {
     notes,
     settings: {
       impactEffort: {
-        effortMid: num(ie.effortMid) ?? base.settings.impactEffort.effortMid,
-        impactMid: num(ie.impactMid) ?? base.settings.impactEffort.impactMid,
+        effortMid: divider(num(ie.effortMid), base.settings.impactEffort.effortMid),
+        impactMid: divider(num(ie.impactMid), base.settings.impactEffort.impactMid),
       },
       moscow: { capacity: positive(num(r.settings?.moscow?.capacity)) },
       weighted: { criteria: normalizeCriteria(r.settings?.weighted?.criteria) },
@@ -100,7 +128,7 @@ const CSV_SCORE_COLUMNS: [MethodId, string][] = [
 /** MoSCoW categories are written as names ("Must have") so the CSV reads naturally in a spreadsheet. */
 const toCsvValue = (m: MethodId, k: string, v: number) => (m === 'moscow' && k === 'category' ? categoryName(v) : v)
 const fromCsvValue = (m: MethodId, k: string, raw: string | undefined) =>
-  m === 'moscow' && k === 'category' ? parseCategory(raw ?? '') : num(raw)
+  cleanScore(m, k, m === 'moscow' && k === 'category' ? parseCategory(raw ?? '') : num(raw))
 
 interface CsvColumn {
   header: string
@@ -110,8 +138,20 @@ interface CsvColumn {
   read: (raw: string | undefined) => number | undefined
 }
 
-/** The fixed method columns, plus one `weighted.<criterion name>` column per Weighted Scoring criterion. */
+/**
+ * The fixed method columns, plus one `weighted.<criterion name>` column per Weighted Scoring criterion.
+ * Criteria that share a name get a numbered header ("Risk (2)") so neither column overwrites the other.
+ */
 function csvColumns(criteria: Criterion[]): CsvColumn[] {
+  const taken = new Set<string>()
+  // Import trims and lowercases headers, so compare them the same way here.
+  const headerFor = (raw: string) => {
+    const name = raw.trim()
+    let header = `weighted.${name}`
+    for (let n = 2; taken.has(header.toLowerCase()); n++) header = `weighted.${name} (${n})`
+    taken.add(header.toLowerCase())
+    return header
+  }
   return [
     ...CSV_SCORE_COLUMNS.map(([m, k]) => ({
       header: `${m}.${k}`,
@@ -121,14 +161,11 @@ function csvColumns(criteria: Criterion[]): CsvColumn[] {
       read: (raw: string | undefined) => fromCsvValue(m, k, raw),
     })),
     ...criteria.map((c) => ({
-      header: `weighted.${c.name}`,
+      header: headerFor(c.name),
       method: 'weighted' as const,
       key: c.id,
       write: (v: number) => v,
-      read: (raw: string | undefined) => {
-        const n = num(raw)
-        return n === undefined ? undefined : Math.min(SCALE_MAX, Math.max(SCALE_MIN, n))
-      },
+      read: (raw: string | undefined) => cleanScore('weighted', c.id, num(raw)),
     })),
   ]
 }

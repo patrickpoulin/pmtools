@@ -47,6 +47,7 @@ export const RICE_FIELDS: FieldDef[] = [
     min: 0.1,
     step: 0.5,
     defaultValue: 1,
+    blankAtZero: true,
   },
 ]
 

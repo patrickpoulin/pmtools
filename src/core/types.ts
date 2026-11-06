@@ -58,6 +58,8 @@ export interface FieldDef {
   step?: number
   options?: FieldOption[]
   defaultValue: number
+  /** Zero or less means "not estimated": imports drop it so the default applies, instead of clamping to min. */
+  blankAtZero?: boolean
   /** How the value is written in exports (PDF table). Defaults to the number itself. */
   format?: (v: number) => string
 }

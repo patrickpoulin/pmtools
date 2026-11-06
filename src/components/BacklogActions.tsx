@@ -1,5 +1,7 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useStore } from '../core/store'
+import { isBlank } from '../core/sample'
+import type { Backlog } from '../core/types'
 import { criteriaOf } from '../methods/weighted/scoring'
 import { backlogToCsv, backlogToJson, csvToItems, downloadBlob, normalizeBacklog, shareUrl, slugify } from '../core/io'
 
@@ -12,6 +14,12 @@ export function BacklogActions() {
   const jsonRef = useRef<HTMLInputElement>(null)
   const csvRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null)
+  // An opened file waits here for a second click when it would replace work.
+  const [pendingFile, setPendingFile] = useState<Backlog | null>(null)
+  // A change to the backlog makes the question out of date.
+  useEffect(() => {
+    setPendingFile(null)
+  }, [backlog])
 
   const readFile = (e: ChangeEvent<HTMLInputElement>, handle: (text: string) => void) => {
     const file = e.target.files?.[0]
@@ -43,6 +51,12 @@ export function BacklogActions() {
 
   const base = slugify(backlog.name)
 
+  const openFile = (b: Backlog) => {
+    setPendingFile(null)
+    replaceBacklog(b)
+    setMsg({ text: `Opened "${b.name}" with ${b.items.length} items.` })
+  }
+
   return (
     <div className="stack">
       <div className="btn-row">
@@ -60,8 +74,9 @@ export function BacklogActions() {
         ref={jsonRef} type="file" accept=".json,application/json" hidden
         onChange={(e) => readFile(e, (t) => {
           const b = normalizeBacklog(JSON.parse(t))
-          replaceBacklog(b)
-          setMsg({ text: `Opened "${b.name}" with ${b.items.length} items.` })
+          setMsg(null)
+          if (isBlank(backlog)) openFile(b)
+          else setPendingFile(b)
         })}
       />
       <input
@@ -72,6 +87,18 @@ export function BacklogActions() {
           setMsg({ text: `Added ${items.length} items from CSV.` })
         })}
       />
+      {pendingFile && (
+        <div className="notice error" role="alert">
+          <span>
+            Opening “{pendingFile.name}” ({pendingFile.items.length} items) replaces your current backlog, “{backlog.name}”
+            ({backlog.items.length} items). Save it as JSON first if you want to keep it.
+          </span>
+          <div className="btn-row" style={{ marginTop: 10 }}>
+            <button className="btn danger" onClick={() => openFile(pendingFile)}>Yes, open the file</button>
+            <button className="btn ghost" onClick={() => setPendingFile(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
       {msg && (
         <div className={`notice${msg.error ? ' error' : ''}`} role="status">
           {msg.text}
