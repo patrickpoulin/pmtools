@@ -46,7 +46,7 @@ export function BacklogResetActions() {
   return (
     <div className="btn-row">
       {msg && <span className="small muted" role="status">{msg}</span>}
-      <button className="btn ghost" onClick={() => { setMsg(null); if (isBlank(backlog)) load(); else setConfirm('sample') }}>
+      <button className="btn" onClick={() => { setMsg(null); if (isBlank(backlog)) load(); else setConfirm('sample') }}>
         Load sample
       </button>
       <button className="btn ghost danger" onClick={() => { setMsg(null); setConfirm('clear') }}>Clear all</button>
