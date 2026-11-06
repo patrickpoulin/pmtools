@@ -85,3 +85,12 @@ export function sampleBacklog(): Backlog {
     })),
   }
 }
+
+/** True when replacing the backlog loses nothing: no items, no notes, and the default criteria. */
+export function isBlank(b: Backlog): boolean {
+  return (
+    !b.items.length &&
+    !Object.values(b.notes).some((n) => n?.trim()) &&
+    JSON.stringify(b.settings.weighted?.criteria ?? defaultCriteria()) === JSON.stringify(defaultCriteria())
+  )
+}
