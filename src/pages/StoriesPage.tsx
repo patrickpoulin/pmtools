@@ -4,7 +4,7 @@ import { useStore } from '../core/store'
 import { downloadBlob } from '../core/io'
 import { useStories } from '../stories/store'
 import {
-  INVEST, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, exampleStory, hasStory, investStatus,
+  INVEST, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, hasStory, investStatus,
   readyCount, storyHints, storyMarkdown, storySentence, type AcceptanceCriterion, type StoryDoc, type UserStory,
 } from '../stories/story'
 
@@ -13,9 +13,11 @@ const STATUS_ICON = { ok: '✓', warn: '⚠', todo: '○' } as const
 export function StoriesPage() {
   const { stories, addStory } = useStories()
   const [params, setParams] = useSearchParams()
-  const selected = stories.find((s) => s.id === params.get('story')) ?? stories[0]
+  const showGuide = params.has('guide') || !stories.length
+  const selected = showGuide ? undefined : stories.find((s) => s.id === params.get('story')) ?? stories[0]
   const select = (id: string) => setParams({ story: id }, { replace: true })
   const written = stories.filter(hasStory)
+  const [pdf, setPdf] = useStoryPdf()
 
   const allMarkdown = () => ['# User stories', ...written.map((s) => storyMarkdown(s.title, s))].join('\n\n') + '\n'
 
@@ -30,7 +32,6 @@ export function StoriesPage() {
           </p>
         </div>
         <div className="btn-row">
-          <button className="btn primary" onClick={() => select(addStory())}>+ New story</button>
           <button
             className="btn"
             disabled={!written.length}
@@ -38,50 +39,74 @@ export function StoriesPage() {
           >
             Download all (.md)
           </button>
+          <button className="btn primary" disabled={!written.length || pdf.busy} onClick={() => setPdf(written, true)}>
+            {pdf.busy ? 'Creating PDF…' : 'Export all as PDF'}
+          </button>
         </div>
       </div>
+      {pdf.error && <div className="notice error" role="alert">{pdf.error}</div>}
 
-      {!selected ? (
-        <div className="card empty">
-          <p>You haven’t written any stories yet.</p>
-          <div className="btn-row" style={{ justifyContent: 'center' }}>
-            <button className="btn primary" onClick={() => select(addStory())}>Write your first story</button>
-            <button className="btn" onClick={() => select(addStory(exampleStory()))}>Start from an example</button>
-          </div>
-        </div>
-      ) : (
-        <div className="story-layout">
-          <nav className="card story-list" aria-label="Your stories">
+      <div className="story-layout">
+        <nav className="card story-list" aria-label="User stories">
+          <button
+            className={`story-guide-link${showGuide ? ' active' : ''}`}
+            aria-current={showGuide ? 'page' : undefined}
+            onClick={() => setParams({ guide: '' }, { replace: true })}
+          >
+            <span aria-hidden="true">?</span> How to write a good story
+          </button>
+          <div className="story-list-head">
             <h2>Your stories</h2>
-            <ol>
-              {stories.map((story) => (
-                <li key={story.id}>
-                  <button
-                    className={story.id === selected.id ? 'active' : ''}
-                    aria-current={story.id === selected.id ? 'true' : undefined}
-                    onClick={() => select(story.id)}
-                  >
-                    <span className="story-list-title">
-                      {story.title.trim() || 'Untitled story'}
-                      <span className="small muted">
-                        {hasStory(story) ? `INVEST ${readyCount(story)} of 6` : 'Not started'}
-                      </span>
+            <button className="btn primary" onClick={() => select(addStory())}>+ New</button>
+          </div>
+          <ol>
+            {stories.map((story) => (
+              <li key={story.id}>
+                <button
+                  className={story.id === selected?.id ? 'active' : ''}
+                  aria-current={story.id === selected?.id ? 'page' : undefined}
+                  onClick={() => select(story.id)}
+                >
+                  <span className="story-list-title">
+                    {story.title.trim() || 'Untitled story'}
+                    <span className="small muted">
+                      {hasStory(story) ? `INVEST ${readyCount(story)} of 6` : 'Not started'}
                     </span>
-                  </button>
-                </li>
-              ))}
-            </ol>
-          </nav>
-          <StoryEditor key={selected.id} story={selected} />
-        </div>
-      )}
-
-      <StoryGuide />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+          {!stories.length && <p className="small muted" style={{ margin: '4px 8px' }}>No stories yet. Start one with + New.</p>}
+        </nav>
+        {selected ? (
+          <StoryEditor key={selected.id} story={selected} onPdf={() => setPdf([selected])} pdfBusy={pdf.busy} />
+        ) : (
+          <StoryGuide onStart={() => select(addStory())} />
+        )}
+      </div>
     </div>
   )
 }
 
-function StoryEditor({ story }: { story: StoryDoc }) {
+/** Builds a PDF of the given stories. The PDF code is loaded on demand: it is most of the bundle. */
+function useStoryPdf() {
+  const [state, setState] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null })
+  const run = async (stories: StoryDoc[], collection = false) => {
+    setState({ busy: true, error: null })
+    try {
+      const { exportStoriesPdf } = await import('../pdf/exportStories')
+      exportStoriesPdf(stories, collection)
+      setState({ busy: false, error: null })
+    } catch (e) {
+      console.error(e)
+      setState({ busy: false, error: 'The PDF could not be created. Please try again.' })
+    }
+  }
+  return [state, run] as const
+}
+
+function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => void; pdfBusy: boolean }) {
   const { updateStory, removeStory } = useStories()
   const addItem = useStore((s) => s.addItem)
   const [msg, setMsg] = useState<{ text: string; error?: boolean; backlog?: boolean } | null>(null)
@@ -231,6 +256,7 @@ function StoryEditor({ story }: { story: StoryDoc }) {
       <div className="card stack">
         <div className="btn-row">
           <button className="btn primary" onClick={copy} disabled={!hasStory(story)}>Copy as Markdown</button>
+          <button className="btn" onClick={onPdf} disabled={!hasStory(story) || pdfBusy}>Export PDF</button>
           <button className="btn" onClick={toBacklog} disabled={!hasStory(story)}>Add to backlog</button>
           {confirmDelete ? (
             <>
@@ -314,10 +340,13 @@ const SPLITS: [string, string][] = [
 ]
 
 /** Plain explainer of what makes a good story, shown below the editor. */
-function StoryGuide() {
+function StoryGuide({ onStart }: { onStart: () => void }) {
   return (
     <div className="card">
-      <h2>How to write a good user story</h2>
+      <div className="page-head" style={{ marginBottom: 12 }}>
+        <h2 style={{ margin: 0 }}>How to write a good user story</h2>
+        <button className="btn primary" onClick={onStart}>Start a new story</button>
+      </div>
       <p>
         A user story is a short description of a change from the point of view of the person who benefits. It is a
         promise of a conversation, not a full specification: the story says who and why, the acceptance criteria say

@@ -3,7 +3,8 @@ import {
   article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
   storyHints, storyMarkdown, storySentence, type UserStory,
 } from './story'
-import { normalizeStoryDocs, storiesFromBacklogItems } from './store'
+import { normalizeStoryDocs, storiesFromBacklogItems, withExample } from './store'
+import { pdfText } from '../pdf/exportStories'
 
 const good = (): UserStory => ({
   role: 'finance approver',
@@ -119,5 +120,17 @@ describe('saved stories', () => {
     const ex = exampleStory()
     expect(storyHints(ex)).toEqual([])
     expect(readyCount(ex)).toBe(6)
+  })
+})
+
+describe('example and PDF text', () => {
+  it('adds the example after the user’s own stories', () => {
+    const list = withExample([{ ...good(), id: 'mine', title: 'Mine' }])
+    expect(list.map((s) => s.id)).toEqual(['mine', 'example'])
+    expect(list[1].title).toMatch(/^Example/)
+  })
+  it('keeps PDF text inside WinAnsi', () => {
+    expect(pdfText('As a café owner → “fast” ✓')).toBe('As a café owner -> “fast” v')
+    expect(pdfText('Łódź 東京 🚀 ok')).toBe('Lódz ??  ok')
   })
 })
