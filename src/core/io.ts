@@ -20,7 +20,7 @@ const num = (v: unknown) => {
 const positive = (n: number | undefined) => (n !== undefined && n > 0 ? n : null)
 
 /** Fields with a fixed range. Weighted Scoring keys are criterion ids, all on the same 1–5 scale. */
-const FIXED_FIELDS: Partial<Record<MethodId, FieldDef[]>> = {
+const FIXED_FIELDS: Record<Exclude<MethodId, 'weighted'>, FieldDef[]> = {
   'impact-effort': IE_FIELDS,
   rice: RICE_FIELDS,
   moscow: MOSCOW_FIELDS,
@@ -31,14 +31,13 @@ const WEIGHTED_FIELD: FieldDef = { key: '', label: '', help: '', kind: 'number',
 function cleanScore(m: MethodId, key: string, v: number | undefined): number | undefined {
   if (v === undefined) return undefined
   if (m === 'weighted') return fitToField(WEIGHTED_FIELD, v)
-  const fields = FIXED_FIELDS[m]
-  if (!fields) return v
-  const field = fields.find((f) => f.key === key)
+  const field = FIXED_FIELDS[m].find((f) => f.key === key)
   return field ? fitToField(field, v) : undefined
 }
 
-/** The quadrant dividers' slider range on the Impact vs Effort page. */
-const divider = (n: number | undefined, fallback: number) => (n === undefined ? fallback : Math.min(9.5, Math.max(1.5, n)))
+/** A quadrant divider on its slider: 1.5 to 9.5 in steps of 0.5. */
+const divider = (n: number | undefined, fallback: number) =>
+  n === undefined ? fallback : Math.min(9.5, Math.max(1.5, Math.round(n * 2) / 2))
 
 /** Coerce untrusted JSON (file upload, share link) into a valid Backlog. */
 export function normalizeBacklog(raw: unknown): Backlog {
@@ -137,7 +136,9 @@ interface CsvColumn {
  */
 function csvColumns(criteria: Criterion[]): CsvColumn[] {
   const taken = new Set<string>()
-  const headerFor = (name: string) => {
+  // Import trims and lowercases headers, so compare them the same way here.
+  const headerFor = (raw: string) => {
+    const name = raw.trim()
     let header = `weighted.${name}`
     for (let n = 2; taken.has(header.toLowerCase()); n++) header = `weighted.${name} (${n})`
     taken.add(header.toLowerCase())

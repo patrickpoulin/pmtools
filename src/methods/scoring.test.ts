@@ -204,19 +204,20 @@ describe('untrusted imports', () => {
         title: 'x',
         scores: {
           'impact-effort': { impact: 50, effort: -2 },
-          rice: { confidence: 70, impact: 2, reach: -5, bogus: 1 },
+          rice: { confidence: 70, impact: 4, reach: -5, effort: 0, bogus: 1 },
           moscow: { category: 9, effort: 3 },
           weighted: { value: 0, risk: 12 },
         },
       }],
-      settings: { impactEffort: { impactMid: 40, effortMid: 0 } },
+      settings: { impactEffort: { impactMid: 40, effortMid: 5.3 } },
     })
     const s = b.items[0].scores
     expect(s['impact-effort']).toEqual({ impact: 10, effort: 1 })
-    expect(s.rice).toEqual({ impact: 2, reach: 0 })
+    // 70% snaps to the nearest option; impact 4 is past Massive and effort 0 means "not estimated".
+    expect(s.rice).toEqual({ confidence: 80, reach: 0 })
     expect(s.moscow).toEqual({ effort: 3 })
     expect(s.weighted).toEqual({ value: 1, risk: 5 })
-    expect(b.settings.impactEffort).toEqual({ impactMid: 9.5, effortMid: 1.5 })
+    expect(b.settings.impactEffort).toEqual({ impactMid: 9.5, effortMid: 5.5 })
   })
   it('gives items with duplicate ids their own id', () => {
     const b = normalizeBacklog({ items: [{ id: 'a', title: 'A' }, { id: 'a', title: 'B' }, { title: 'C' }] })
@@ -224,12 +225,12 @@ describe('untrusted imports', () => {
     expect(new Set(b.items.map((i) => i.id)).size).toBe(3)
   })
   it('clamps CSV scores the same way', () => {
-    const [item] = csvToItems('title,impact-effort.impact,rice.confidence\nA,0,90\n')
-    expect(item.scores).toEqual({ 'impact-effort': { impact: 1 } })
+    const [item] = csvToItems('title,impact-effort.impact,rice.confidence\nA,0,95\n')
+    expect(item.scores).toEqual({ 'impact-effort': { impact: 1 }, rice: { confidence: 100 } })
   })
   it('numbers CSV columns for criteria that share a name, and reads them back', () => {
     const b = sampleBacklog()
-    b.settings.weighted.criteria[4] = { ...b.settings.weighted.criteria[4], name: 'effort' }
+    b.settings.weighted.criteria[4] = { ...b.settings.weighted.criteria[4], name: 'effort ' }
     const csv = backlogToCsv(b)
     expect(csv.split('\n')[0]).toContain('weighted.Effort,weighted.effort (2)')
     expect(csvToItems(csv, b.settings.weighted.criteria)[0].scores.weighted).toEqual(b.items[0].scores.weighted)
@@ -241,6 +242,7 @@ describe('pdfSafe', () => {
     expect(pdfSafe('Café • 50% — “ok” …')).toBe('Café • 50% — "ok" …')
     expect(pdfSafe('Effort ≤ 3 → ship ✓')).toBe('Effort <= 3 -> ship v')
     expect(pdfSafe('Łódź Győr')).toBe('Lódz Gyor')
-    expect(pdfSafe('Launch 🚀 now\nnext')).toBe('Launch  now\nnext')
+    expect(pdfSafe('Launch 🚀 now\nnext\tstep')).toBe('Launch  now\nnext step')
+    expect(pdfSafe('Дорога 1')).toBe('?????? 1')
   })
 })

@@ -1,6 +1,6 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useStore } from '../core/store'
-import { criteriaOf } from '../methods/weighted/scoring'
+import { criteriaOf, defaultCriteria } from '../methods/weighted/scoring'
 import type { Backlog } from '../core/types'
 import { backlogToCsv, backlogToJson, csvToItems, downloadBlob, normalizeBacklog, shareUrl, slugify } from '../core/io'
 
@@ -15,6 +15,10 @@ export function BacklogActions() {
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null)
   // Actions that replace the whole backlog wait here for a second click.
   const [pending, setPending] = useState<{ text: string; label: string; run: () => void } | null>(null)
+  // Any change to the backlog makes the question out of date, so ask again rather than act on it.
+  useEffect(() => {
+    setPending(null)
+  }, [backlog])
 
   const readFile = (e: ChangeEvent<HTMLInputElement>, handle: (text: string) => void) => {
     const file = e.target.files?.[0]
@@ -47,11 +51,17 @@ export function BacklogActions() {
   const base = slugify(backlog.name)
   const current = `“${backlog.name}” (${backlog.items.length} ${backlog.items.length === 1 ? 'item' : 'items'})`
 
+  // Nothing to lose: no items, no notes, and the default criteria.
+  const untouched =
+    !backlog.items.length &&
+    !Object.values(backlog.notes).some((n) => n?.trim()) &&
+    JSON.stringify(criteriaOf(backlog)) === JSON.stringify(defaultCriteria())
+
   /** Runs `run` straight away when there is nothing to lose, otherwise asks first. */
   const confirmReplace = (text: string, label: string, run: () => void) => {
     setMsg(null)
-    if (backlog.items.length) setPending({ text, label, run })
-    else run()
+    if (untouched) run()
+    else setPending({ text, label, run })
   }
 
   const loadSampleBacklog = () => {
