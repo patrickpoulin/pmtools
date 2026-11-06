@@ -15,13 +15,13 @@ export { pdfText }
 
 const STATUS_TEXT = { ok: 'Confirmed', warn: 'Needs attention', todo: 'Not confirmed' } as const
 
-/** One story gets its own title; `collection` prints any number of stories under "User stories". */
+/** One story gets its own title; `collection` prints any number of stories under "User Stories". */
 export function exportStoriesPdf(stories: StoryDoc[], collection = false) {
   const doc = new jsPDF({ unit: 'pt', format: 'letter' })
   const date = new Date()
   const dateLabel = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const single = !collection && stories.length === 1
-  const docTitle = single ? stories[0].title.trim() || 'Untitled story' : 'User stories'
+  const docTitle = single ? stories[0].title.trim() || 'Untitled story' : 'User Stories'
   doc.setProperties({ title: pdfText(docTitle), creator: 'PM Tools' })
 
   let y = TOP

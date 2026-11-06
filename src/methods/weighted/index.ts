@@ -42,7 +42,7 @@ export const weighted: MethodDef = {
     ],
   },
   summary: {
-    title: 'Criteria and weights',
+    title: 'Criteria and Weights',
     lines: (backlog) => {
       const criteria = criteriaOf(backlog)
       return criteria.map(

@@ -19,7 +19,7 @@ export function StoriesPage() {
   const written = stories.filter(hasStory)
   const [pdf, setPdf] = useStoryPdf()
 
-  const allMarkdown = () => ['# User stories', ...written.map((s) => storyMarkdown(s.title.trim() || 'Untitled story', s))].join('\n\n') + '\n'
+  const allMarkdown = () => ['# User Stories', ...written.map((s) => storyMarkdown(s.title.trim() || 'Untitled story', s))].join('\n\n') + '\n'
 
   return (
     <div className="stack">
@@ -47,7 +47,7 @@ export function StoriesPage() {
       {pdf.error && <div className="notice error" role="alert">{pdf.error}</div>}
 
       <div className="story-layout">
-        <nav className="card story-list" aria-label="User stories">
+        <nav className="card story-list" aria-label="User Stories">
           <button
             className={`story-guide-link${showGuide ? ' active' : ''}`}
             aria-current={showGuide ? 'page' : undefined}
@@ -79,8 +79,8 @@ export function StoriesPage() {
               </li>
             ))}
           </ol>
-          {!stories.length && <p className="small muted" style={{ margin: '4px 8px' }}>No stories yet. Start one with + New.</p>}
-          {!stories.some((s) => s.id === EXAMPLE_ID) && (
+          {!stories.length && <p className="small muted" style={{ margin: '4px 8px' }}>No stories yet. Start one with + New, or add the example below.</p>}
+          {!stories.some((s) => s.id === EXAMPLE_ID) && stories.length < LIMITS.stories && (
             <button
               className="btn ghost story-example-btn"
               onClick={() => {
@@ -161,7 +161,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
     <div className="stack">
       <div className="card stack">
         <label className="field">
-          Story Name
+          Story name
           <input
             value={story.title}
             maxLength={LIMITS.title}
@@ -275,7 +275,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
           <span className="small muted hint">Story points agreed with the team. Anything over 8 is a sign to split.</span>
         </label>
         <label className="field">
-          Notes (Optional)
+          Notes (optional)
           <textarea
             value={story.notes}
             maxLength={LIMITS.notes}
@@ -378,7 +378,7 @@ function StoryGuide({ onStart }: { onStart: () => void }) {
   return (
     <div className="card">
       <div className="page-head" style={{ marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>How to Write a Good User Story</h2>
+        <h2 style={{ margin: 0 }}>How to Write a Good Story</h2>
         <button className="btn primary" onClick={onStart}>Start a new story</button>
       </div>
       <p>

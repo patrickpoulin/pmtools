@@ -41,7 +41,7 @@ export const moscow: MethodDef = {
     `Guidelines (DSDM): Must-haves no more than about ${Math.round(MUST_SHARE_LIMIT * 100)}% of the effort available, Must + Should about ${Math.round(MUST_SHOULD_LIMIT * 100)}%, and Could-haves the remaining contingency.`,
   ],
   summary: {
-    title: 'Scope check',
+    title: 'Scope Check',
     lines: (backlog) => {
       const cap = backlog.settings.moscow?.capacity
       return [

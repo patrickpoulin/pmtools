@@ -338,4 +338,4 @@ details.about ul { padding-left: 1.2em; margin: 6px 0 12px; }
 .story-list-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 8px 0; border-top: 1px solid var(--border); margin-bottom: 8px; }
 .story-list-head h2 { margin: 0; padding: 0; }
 .story-list-head .btn { padding: 4px 10px; }
-.story-example-btn { margin-top: 8px; width: 100%; justify-content: flex-start; font-size: 0.85rem; color: var(--accent-ink); }
+.story-example-btn { margin-top: 8px; width: 100%; justify-content: flex-start; white-space: normal; text-align: left; font-size: 0.85rem; color: var(--accent-ink); }
