@@ -3,6 +3,7 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 import type { Backlog, Criterion, FieldDef, Item, MethodId, MethodScores } from './types'
 import { emptyBacklog } from './sample'
 import { newId } from './store'
+import { normalizeStory } from '../stories/story'
 import { fitToField } from '../methods/types'
 import { IE_FIELDS } from '../methods/impact-effort/scoring'
 import { RICE_FIELDS } from '../methods/rice/scoring'
@@ -39,6 +40,12 @@ function cleanScore(m: MethodId, key: string, v: number | undefined): number | u
 const divider = (n: number | undefined, fallback: number) =>
   n === undefined ? fallback : Math.min(9.5, Math.max(1.5, Math.round(n * 2) / 2))
 
+/** Only set when present, so files from before stories existed still get the sample's stories. */
+function storyField(raw: unknown): Pick<Item, 'story'> {
+  const story = normalizeStory(raw)
+  return story === undefined ? {} : { story }
+}
+
 /** Coerce untrusted JSON (file upload, share link) into a valid Backlog. */
 export function normalizeBacklog(raw: unknown): Backlog {
   if (!raw || typeof raw !== 'object') throw new Error('Not a backlog file.')
@@ -69,6 +76,7 @@ export function normalizeBacklog(raw: unknown): Backlog {
       description: str(it?.description).slice(0, 2000),
       tags: Array.isArray(it?.tags) ? it.tags.filter((t: unknown) => typeof t === 'string').slice(0, 20) : [],
       scores,
+      ...storyField(it?.story),
     }
   })
   const ie = r.settings?.impactEffort ?? {}

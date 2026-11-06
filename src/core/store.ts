@@ -35,6 +35,7 @@ interface State {
 export function fillSampleScores(b: Backlog): Backlog {
   const fresh = sampleBacklog()
   const sample = new Map(fresh.items.map((i) => [i.id, i.scores]))
+  const stories = new Map(fresh.items.map((i) => [i.id, i.story]))
   const isSample = b.items.some((i) => sample.has(i.id))
   return {
     ...b,
@@ -47,7 +48,10 @@ export function fillSampleScores(b: Backlog): Backlog {
       const scores = sample.get(item.id)
       if (!scores) return item
       const missing = Object.entries(scores).filter(([m]) => !item.scores[m as MethodId])
-      return missing.length ? { ...item, scores: { ...Object.fromEntries(missing), ...item.scores } } : item
+      const filled = missing.length ? { ...item, scores: { ...Object.fromEntries(missing), ...item.scores } } : item
+      // A cleared story is null, so only items saved before stories existed get the sample's.
+      const story = stories.get(item.id)
+      return story && !('story' in item) ? { ...filled, story } : filled
     }),
   }
 }

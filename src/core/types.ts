@@ -1,3 +1,5 @@
+import type { UserStory } from '../stories/story'
+
 export type MethodId = 'impact-effort' | 'rice' | 'moscow' | 'weighted'
 
 /** Scores an item has for one method, keyed by field name. Missing = not yet scored. */
@@ -9,6 +11,8 @@ export interface Item {
   description: string
   tags: string[]
   scores: Partial<Record<MethodId, MethodScores>>
+  /** The item written up as a user story. Null when cleared; absent in files saved before stories existed. */
+  story?: UserStory | null
 }
 
 export interface Backlog {
