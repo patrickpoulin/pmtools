@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import { METHODS } from './methods/registry'
 import { pageFor } from './routes'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -32,15 +32,18 @@ export function App() {
             PM Tools
           </Link>
           <nav className="nav" aria-label="Main">
-            <NavLink to="/backlog">Backlog</NavLink>
             <NavMenu
               label="Prioritization"
-              links={[
-                ...METHODS.map((m) => ({ to: `/method/${m.id}`, label: m.name })),
-                { to: '/compare', label: 'Compare methods' },
+              sections={[
+                { heading: '1. Start here', links: [{ to: '/backlog', label: 'Backlog' }] },
+                {
+                  heading: '2. Score it',
+                  links: METHODS.map((m) => ({ to: `/method/${m.id}`, label: m.name })),
+                },
+                { heading: '3. Decide', links: [{ to: '/compare', label: 'Compare methods' }] },
               ]}
             />
-            <NavMenu label="Planning" links={[{ to: '/stories', label: 'User stories' }]} />
+            <NavMenu label="Planning" sections={[{ links: [{ to: '/stories', label: 'User stories' }] }]} />
           </nav>
           <ThemeToggle />
         </div>

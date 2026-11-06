@@ -6,17 +6,24 @@ export interface NavMenuLink {
   label: string
 }
 
+/** A group of links in a menu. A heading (such as a numbered step) shows above its links. */
+export interface NavMenuSection {
+  heading?: string
+  links: NavMenuLink[]
+}
+
 /**
  * A top-nav dropdown built as a disclosure (a button that shows a list of links), the pattern
  * recommended for site navigation. Opens on click, tap, Enter or Space; Escape closes it and returns
  * focus to the button; it also closes on navigation, an outside click, or when focus leaves it.
  */
-export function NavMenu({ label, links }: { label: string; links: NavMenuLink[] }) {
+export function NavMenu({ label, sections }: { label: string; sections: NavMenuSection[] }) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLButtonElement>(null)
   const listId = useId()
   const { pathname } = useLocation()
+  const links = sections.flatMap((s) => s.links)
   const current = links.some((l) => pathname === l.to || pathname.startsWith(`${l.to}/`))
 
   useEffect(() => {
@@ -83,9 +90,20 @@ export function NavMenu({ label, links }: { label: string; links: NavMenuLink[] 
         </svg>
       </button>
       <ul className="nav-menu-list" id={listId} hidden={!open}>
-        {links.map((l) => (
-          <li key={l.to}>
-            <NavLink to={l.to}>{l.label}</NavLink>
+        {sections.map((section, i) => (
+          <li key={i} className="nav-menu-section">
+            {section.heading && (
+              <span className="nav-menu-heading" id={`${listId}-${i}`}>
+                {section.heading}
+              </span>
+            )}
+            <ul aria-labelledby={section.heading ? `${listId}-${i}` : undefined}>
+              {section.links.map((l) => (
+                <li key={l.to}>
+                  <NavLink to={l.to}>{l.label}</NavLink>
+                </li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>

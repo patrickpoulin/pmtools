@@ -145,6 +145,12 @@ p { margin: 0 0 1em; }
 }
 .nav-menu-list[hidden] { display: none; }
 .nav-menu-list a { display: block; padding: 8px 10px; }
+.nav-menu-list ul { list-style: none; margin: 0; padding: 0; }
+.nav-menu-section + .nav-menu-section { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 6px; }
+.nav-menu-heading {
+  display: block; padding: 4px 10px 2px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--text-muted);
+}
 @media (prefers-reduced-motion: reduce) { .nav-menu-button svg { transition: none; } }
 /* Small screens: brand and theme toggle on one row, the nav on its own full-width row below. */
 @media (max-width: 640px) {
