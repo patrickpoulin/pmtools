@@ -11,7 +11,7 @@ import {
 const STATUS_ICON = { ok: '✓', warn: '⚠', todo: '○' } as const
 
 export function StoriesPage() {
-  const { stories, addStory } = useStories()
+  const { stories, addStory, removeStory } = useStories()
   const [params, setParams] = useSearchParams()
   const showGuide = params.has('guide') || !stories.length
   const selected = showGuide ? undefined : stories.find((s) => s.id === params.get('story')) ?? stories[0]
@@ -80,7 +80,18 @@ export function StoriesPage() {
           {!stories.length && <p className="small muted" style={{ margin: '4px 8px' }}>No stories yet. Start one with + New.</p>}
         </nav>
         {selected ? (
-          <StoryEditor key={selected.id} story={selected} onPdf={() => setPdf([selected])} pdfBusy={pdf.busy} />
+          <StoryEditor
+            key={selected.id}
+            story={selected}
+            onPdf={() => setPdf([selected])}
+            pdfBusy={pdf.busy}
+            onDelete={() => {
+              // Back to the top of the page and the first story, rather than mid-way down the next one.
+              removeStory(selected.id)
+              setParams({}, { replace: true })
+              window.scrollTo(0, 0)
+            }}
+          />
         ) : (
           <StoryGuide onStart={() => select(addStory())} />
         )}
@@ -106,8 +117,8 @@ function useStoryPdf() {
   return [state, run] as const
 }
 
-function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => void; pdfBusy: boolean }) {
-  const { updateStory, removeStory } = useStories()
+function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onPdf: () => void; pdfBusy: boolean; onDelete: () => void }) {
+  const updateStory = useStories((s) => s.updateStory)
   const addItem = useStore((s) => s.addItem)
   const [msg, setMsg] = useState<{ text: string; error?: boolean; backlog?: boolean } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -260,7 +271,7 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
           <button className="btn" onClick={toBacklog} disabled={!hasStory(story)}>Add to backlog</button>
           {confirmDelete ? (
             <>
-              <button className="btn danger" onClick={() => removeStory(story.id)}>Yes, delete this story</button>
+              <button className="btn danger" onClick={onDelete}>Yes, delete this story</button>
               <button className="btn ghost" onClick={() => setConfirmDelete(false)}>Cancel</button>
             </>
           ) : (
