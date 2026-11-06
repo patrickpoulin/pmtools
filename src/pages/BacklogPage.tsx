@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useStore } from '../core/store'
+import { ITEM_LIMITS } from '../core/io'
 import { BacklogActions } from '../components/BacklogActions'
 import { BacklogResetActions } from '../components/BacklogResetActions'
 
@@ -7,10 +8,12 @@ export function BacklogPage() {
   const backlog = useStore((s) => s.backlog)
   const { setMeta, addItem, updateItem, removeItem, moveItem } = useStore()
   const [title, setTitle] = useState('')
+  // Imports keep at most this many items, so stop here rather than lose some on the next open.
+  const full = backlog.items.length >= ITEM_LIMITS.items
 
   const add = (e: FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim() || full) return
     addItem({ title: title.trim() })
     setTitle('')
   }
@@ -31,11 +34,11 @@ export function BacklogPage() {
       <div className="card grid-2">
         <label className="field">
           Backlog name
-          <input value={backlog.name} onChange={(e) => setMeta({ name: e.target.value })} />
+          <input value={backlog.name} maxLength={ITEM_LIMITS.title} onChange={(e) => setMeta({ name: e.target.value })} />
         </label>
         <label className="field">
           Author or team (shown on PDFs)
-          <input value={backlog.author} placeholder="e.g. Growth squad" onChange={(e) => setMeta({ author: e.target.value })} />
+          <input value={backlog.author} maxLength={ITEM_LIMITS.title} placeholder="e.g. Growth squad" onChange={(e) => setMeta({ author: e.target.value })} />
         </label>
       </div>
 
@@ -56,10 +59,10 @@ export function BacklogPage() {
                 <tr key={item.id} className="item-row">
                   <td><span className="dot-num">{i + 1}</span></td>
                   <td>
-                    <input aria-label={`Title of item ${i + 1}`} value={item.title} onChange={(e) => updateItem(item.id, { title: e.target.value })} />
+                    <input aria-label={`Title of item ${i + 1}`} value={item.title} maxLength={ITEM_LIMITS.title} onChange={(e) => updateItem(item.id, { title: e.target.value })} />
                   </td>
                   <td>
-                    <input aria-label={`Description of item ${i + 1}`} value={item.description} placeholder="Why it matters" onChange={(e) => updateItem(item.id, { description: e.target.value })} />
+                    <input aria-label={`Description of item ${i + 1}`} value={item.description} maxLength={ITEM_LIMITS.description} placeholder="Why it matters" onChange={(e) => updateItem(item.id, { description: e.target.value })} />
                   </td>
                   <td>
                     <TagsInput value={item.tags} onChange={(tags) => updateItem(item.id, { tags })} label={`Tags for item ${i + 1}`} />
@@ -80,10 +83,11 @@ export function BacklogPage() {
             aria-label="New item title"
             placeholder="Add an item, e.g. “Self-serve onboarding”, then press Enter"
             value={title}
+            maxLength={ITEM_LIMITS.title}
             onChange={(e) => setTitle(e.target.value)}
             style={{ flex: 1, minWidth: 220, width: 'auto' }}
           />
-          <button className="btn primary" type="submit" disabled={!title.trim()}>Add item</button>
+          <button className="btn primary" type="submit" disabled={!title.trim() || full}>Add item</button>
         </form>
       </div>
 

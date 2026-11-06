@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useStore } from '../core/store'
-import { downloadBlob } from '../core/io'
+import { ITEM_LIMITS, downloadBlob } from '../core/io'
 import { EXAMPLE_ID, useStories } from '../stories/store'
 import {
   INVEST, LIMITS, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, hasStory, investStatus,
@@ -106,7 +106,7 @@ export function StoriesPage() {
             }}
           />
         ) : (
-          <StoryGuide onStart={() => select(addStory())} />
+          <StoryGuide onStart={stories.length < LIMITS.stories ? () => select(addStory()) : undefined} />
         )}
       </div>
     </div>
@@ -151,7 +151,12 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
   }
 
   const toBacklog = () => {
-    addItem({ title, description: storySentence(story) })
+    if (useStore.getState().backlog.items.length >= ITEM_LIMITS.items) {
+      setMsg({ text: `Your backlog is full (${ITEM_LIMITS.items} items). Remove an item first.`, error: true })
+      return
+    }
+    // Same limits the backlog applies when it is saved and reopened, so nothing is cut later.
+    addItem({ title: title.slice(0, ITEM_LIMITS.title), description: storySentence(story).slice(0, ITEM_LIMITS.description) })
     setMsg({ text: `Added “${title}” to your backlog.`, backlog: true })
   }
 
@@ -374,12 +379,12 @@ const SPLITS: [string, string][] = [
 ]
 
 /** Plain explainer of what makes a good story, shown below the editor. */
-function StoryGuide({ onStart }: { onStart: () => void }) {
+function StoryGuide({ onStart }: { onStart?: () => void }) {
   return (
     <div className="card">
       <div className="page-head" style={{ marginBottom: 12 }}>
         <h2 style={{ margin: 0 }}>How to Write a Good Story</h2>
-        <button className="btn primary" onClick={onStart}>Start a new story</button>
+        <button className="btn primary" onClick={onStart} disabled={!onStart}>Start a new story</button>
       </div>
       <p>
         A user story is a short description of a change from the point of view of the person who benefits. It is a

@@ -106,16 +106,22 @@ export async function exportMethodPdf(method: MethodDef, backlog: Backlog) {
 
   const section = (title: string, lines: string[]) => {
     const body = lines.flatMap((l) => doc.setFontSize(9.5).splitTextToSize(safe(l), CONTENT_W) as string[])
-    const needed = 18 + body.length * 13
-    if (y + needed > PAGE_H - 56) {
+    // Keep the title with its first few lines; after that, long sections continue on the next page.
+    if (y + 18 + Math.min(body.length, 3) * 13 > PAGE_H - 56) {
       doc.addPage()
       y = 56
     }
     doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...INK).text(safe(title), MX, y)
     y += 16
-    doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...INK2)
-    doc.text(body, MX, y, { lineHeightFactor: 1.35 })
-    y += body.length * 13 + 14
+    for (const line of body) {
+      if (y + 13 > PAGE_H - 56) {
+        doc.addPage()
+        y = 56
+      }
+      doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...INK2).text(line, MX, y)
+      y += 13
+    }
+    y += 14
   }
 
   if (method.summary) {
