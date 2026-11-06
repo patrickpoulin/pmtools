@@ -10,7 +10,7 @@ export function BacklogResetActions() {
   return (
     <div className="btn-row">
       {msg && <span className="small muted" role="status">{msg}</span>}
-      <button className="btn ghost" onClick={() => { loadSample(); setConfirmClear(false); setMsg('Sample backlog loaded.') }}>
+      <button className="btn" onClick={() => { loadSample(); setConfirmClear(false); setMsg('Sample backlog loaded.') }}>
         Load sample
       </button>
       {confirmClear ? (
