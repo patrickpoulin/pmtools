@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useStore } from '../core/store'
 import { METHODS } from '../methods/registry'
 import { BacklogActions } from '../components/BacklogActions'
+import { BacklogResetActions } from '../components/BacklogResetActions'
 
 export function BacklogPage() {
   const backlog = useStore((s) => s.backlog)
@@ -48,6 +49,10 @@ export function BacklogPage() {
       </div>
 
       <div className="card">
+        <div className="page-head" style={{ alignItems: 'center', marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>Items ({backlog.items.length})</h2>
+          <BacklogResetActions />
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
@@ -81,7 +86,7 @@ export function BacklogPage() {
               ))}
             </tbody>
           </table>
-          {!backlog.items.length && <div className="empty">No items yet. Add one below, import a CSV, or load the sample.</div>}
+          {!backlog.items.length && <div className="empty">No items yet. Add one below, import a CSV, or use Load sample above.</div>}
         </div>
         <form onSubmit={add} className="btn-row" style={{ marginTop: 16 }}>
           <input
