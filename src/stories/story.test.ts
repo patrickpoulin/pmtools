@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  MAX_CRITERIA, article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
+  LIMITS, MAX_CRITERIA, article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
   storyHints, storyMarkdown, storySentence, type UserStory,
 } from './story'
 import { loadStories, normalizeStoryDocs, storiesFromBacklogItems, useStories, withExample } from './store'
-import { pdfText } from '../pdf/exportStories'
+import { pdfText } from '../pdf/common'
 
 const good = (): UserStory => ({
   role: 'finance approver',
@@ -29,6 +29,9 @@ describe('story text', () => {
       'As an admin, I want to export, so that I can audit.',
     )
     expect(['user', 'unit lead', 'urban planner', 'operator'].map(article)).toEqual(['a', 'a', 'an', 'an'])
+    expect(['UX designer', 'UI lead', 'European buyer', 'one-time donor', 'upset customer', 'Uber driver'].map(article)).toEqual(
+      ['a', 'a', 'a', 'a', 'an', 'a'],
+    )
     expect(storySentence({ role: 'As a buyer', want: '', benefit: '' })).toBe('As a buyer, I want …, so that ….')
   })
   it('writes Given/When/Then, skipping empty parts', () => {
@@ -88,9 +91,9 @@ describe('investStatus', () => {
 
 describe('saved stories', () => {
   it('normalizes untrusted input', () => {
-    const s = normalizeStory({ role: 5, want: 'x'.repeat(900), criteria: [{ given: 1, then: 'ok' }], points: -2, invest: { small: 'yes', valuable: true, bogus: true } })!
+    const s = normalizeStory({ role: 5, want: 'x'.repeat(LIMITS.text + 100), criteria: [{ given: 1, then: 'ok' }], points: -2, invest: { small: 'yes', valuable: true, bogus: true } })!
     expect(s.role).toBe('')
-    expect(s.want).toHaveLength(500)
+    expect(s.want).toHaveLength(LIMITS.text)
     expect(s.criteria).toEqual([{ given: '', when: '', then: 'ok' }])
     expect(s.points).toBeNull()
     expect(s.invest).toEqual({ valuable: true })
@@ -186,9 +189,18 @@ describe('story edge cases', () => {
     const criteria = Array.from({ length: MAX_CRITERIA + 1 }, (_, i) => ({ given: `case ${i}`, when: 'I save', then: 'it is saved' }))
     expect(hintsFor({ criteria })).toEqual(['small'])
   })
-  it('caps imported estimates and ignores criteria lists past 20', () => {
-    const s = normalizeStory({ points: 500, criteria: Array.from({ length: 30 }, () => ({ then: 'x' })) })!
+  it('caps imported estimates and criteria at the editor limits', () => {
+    const s = normalizeStory({ points: 500, criteria: Array.from({ length: LIMITS.criteria + 5 }, () => ({ then: 'x' })) })!
     expect(s.points).toBe(100)
-    expect(s.criteria).toHaveLength(20)
+    expect(s.criteria).toHaveLength(LIMITS.criteria)
+  })
+  it('keeps text up to the editor limits when loading, so nothing typed is lost', () => {
+    const long = { role: 'r'.repeat(LIMITS.role), want: 'w'.repeat(LIMITS.text), notes: 'n'.repeat(LIMITS.notes) }
+    const s = normalizeStory(long)!
+    expect([s.role.length, s.want.length, s.notes.length]).toEqual([LIMITS.role, LIMITS.text, LIMITS.notes])
+  })
+  it('gives stories moved from backlog items stable ids', () => {
+    const items = [{ id: 'x1', title: 'Approvals', story: good() }]
+    expect(storiesFromBacklogItems(items)[0].id).toBe(storiesFromBacklogItems(items)[0].id)
   })
 })

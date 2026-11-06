@@ -4,7 +4,7 @@ import { useStore } from '../core/store'
 import { downloadBlob } from '../core/io'
 import { EXAMPLE_ID, useStories } from '../stories/store'
 import {
-  INVEST, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, hasStory, investStatus,
+  INVEST, LIMITS, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, hasStory, investStatus,
   readyCount, storyHints, storyMarkdown, storySentence, type AcceptanceCriterion, type StoryDoc, type UserStory,
 } from '../stories/story'
 
@@ -19,7 +19,7 @@ export function StoriesPage() {
   const written = stories.filter(hasStory)
   const [pdf, setPdf] = useStoryPdf()
 
-  const allMarkdown = () => ['# User stories', ...written.map((s) => storyMarkdown(s.title, s))].join('\n\n') + '\n'
+  const allMarkdown = () => ['# User stories', ...written.map((s) => storyMarkdown(s.title.trim() || 'Untitled story', s))].join('\n\n') + '\n'
 
   return (
     <div className="stack">
@@ -57,7 +57,9 @@ export function StoriesPage() {
           </button>
           <div className="story-list-head">
             <h2>Your stories</h2>
-            <button className="btn primary" onClick={() => select(addStory())}>+ New</button>
+            <button className="btn primary" disabled={stories.length >= LIMITS.stories} onClick={() => select(addStory())}>
+              + New
+            </button>
           </div>
           <ol>
             {stories.map((story) => (
@@ -161,6 +163,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
           Story name
           <input
             value={story.title}
+            maxLength={LIMITS.title}
             placeholder="e.g. Invite teammates"
             onChange={(e) => set({ title: e.target.value })}
           />
@@ -171,9 +174,10 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
           <label className="field">
             1. Who is it for?
             <span className="story-input">
-              <span className="story-prefix">As {article(role || 'a')}</span>
+              <span className="story-prefix">As {role ? article(role) : 'a'}</span>
               <input
                 value={story.role}
+                maxLength={LIMITS.role}
                 placeholder="new workspace admin"
                 onChange={(e) => set({ role: e.target.value })}
               />
@@ -186,6 +190,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
               <span className="story-prefix">I want</span>
               <input
                 value={story.want}
+                maxLength={LIMITS.text}
                 placeholder="to invite my teammates in one step"
                 onChange={(e) => set({ want: e.target.value })}
               />
@@ -198,6 +203,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
               <span className="story-prefix">so that</span>
               <input
                 value={story.benefit}
+                maxLength={LIMITS.text}
                 placeholder="we can start working together on day one"
                 onChange={(e) => set({ benefit: e.target.value })}
               />
@@ -224,6 +230,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
                   <span className="story-prefix">{k[0].toUpperCase() + k.slice(1)}</span>
                   <input
                     value={c[k]}
+                    maxLength={LIMITS.text}
                     placeholder={CRITERION_PLACEHOLDER[k]}
                     onChange={(e) => setCriterion(i, { [k]: e.target.value })}
                   />
@@ -241,7 +248,11 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
           ))}
         </div>
         <div className="btn-row" style={{ marginTop: 12 }}>
-          <button className="btn" onClick={() => set({ criteria: [...story.criteria, emptyCriterion()] })}>
+          <button
+            className="btn"
+            disabled={story.criteria.length >= LIMITS.criteria}
+            onClick={() => set({ criteria: [...story.criteria, emptyCriterion()] })}
+          >
             + Add criterion
           </button>
           <span className="small muted">Most stories need 2 to {MAX_CRITERIA - 2}. Include at least one “unhappy path”.</span>
@@ -256,7 +267,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
             onChange={(e) => set({ points: e.target.value === '' ? null : Number(e.target.value) })}
           >
             <option value="">Not estimated</option>
-            {POINTS.map((p) => (
+            {(story.points === null || POINTS.includes(story.points) ? POINTS : [...POINTS, story.points].sort((a, b) => a - b)).map((p) => (
               <option key={p} value={p}>{p} {p === 1 ? 'point' : 'points'}</option>
             ))}
           </select>
@@ -266,6 +277,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
           Notes (optional)
           <textarea
             value={story.notes}
+            maxLength={LIMITS.notes}
             placeholder="Out of scope, open questions, links to designs or research"
             onChange={(e) => set({ notes: e.target.value })}
           />

@@ -1,51 +1,17 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { slugify } from '../core/io'
+import { ACCENT, CONTENT_W, INK, INK2, MX, PAGE_H, PAGE_W, RULE, drawFooter, lastTableY, pdfText } from './common'
 import {
   INVEST, cleanPart, criterionText, investStatus, storyHints, storySentence, type StoryDoc,
 } from '../stories/story'
 
-const REPO = 'github.com/patrickpoulin/pmtools'
-const PAGE_W = 612
-const PAGE_H = 792
-const MX = 48
 const TOP = 56
 const BOTTOM = PAGE_H - 56
-const CONTENT_W = PAGE_W - MX * 2
-const INK: [number, number, number] = [11, 11, 11]
-const INK2: [number, number, number] = [82, 81, 78]
-const ACCENT: [number, number, number] = [42, 120, 214]
 const ACCENT_SOFT: [number, number, number] = [230, 240, 252]
 const DANGER: [number, number, number] = [180, 47, 47]
-const RULE: [number, number, number] = [225, 224, 217]
 
-const SYMBOLS: Record<string, string> = {
-  '→': '->', '←': '<-', '⇒': '=>', '≤': '<=', '≥': '>=', '≠': '!=', '≈': '~', '−': '-', '‐': '-', '‑': '-',
-  '✓': 'v', '✔': 'v', '✕': 'x', '✗': 'x', 'Ł': 'L', 'ł': 'l', 'Đ': 'D', 'đ': 'd', 'ı': 'i', '\t': ' ', ' ': ' ', ' ': ' ', ' ': ' ',
-}
-const WIN_ANSI_EXTRAS = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ'
-const printable = (ch: string) => {
-  const c = ch.codePointAt(0)!
-  return c === 10 || (c >= 0x20 && c <= 0x7e) || (c >= 0xa0 && c <= 0xff) || WIN_ANSI_EXTRAS.includes(ch)
-}
-
-/**
- * Story text is free-form user input, and jsPDF's built-in fonts only cover WinAnsi. Spell out common
- * symbols, strip accents WinAnsi lacks, show other letters as "?" and drop emoji, so nothing prints as garbage.
- */
-export function pdfText(s: string): string {
-  let out = ''
-  for (const ch of s) {
-    if (ch in SYMBOLS) out += SYMBOLS[ch]
-    else if (printable(ch)) out += ch
-    else {
-      const base = ch.normalize('NFKD').replace(/[̀-ͯ]/g, '')
-      if (base && [...base].every(printable)) out += base
-      else if (/\p{L}|\p{N}/u.test(ch)) out += '?'
-    }
-  }
-  return out
-}
+export { pdfText }
 
 const STATUS_TEXT = { ok: 'Confirmed', warn: 'Needs attention', todo: 'Not confirmed' } as const
 
@@ -70,9 +36,12 @@ export function exportStoriesPdf(stories: StoryDoc[], collection = false) {
     doc.setFont('helvetica', bold ? 'bold' : 'normal').setFontSize(size).setTextColor(...color)
     const lines = doc.splitTextToSize(pdfText(text), CONTENT_W - indent) as string[]
     const lh = size * 1.35
-    room(lines.length * lh)
-    doc.text(lines, MX + indent, y + size * 0.8, { lineHeightFactor: 1.35 })
-    y += lines.length * lh
+    // Line by line, so a paragraph longer than a page continues on the next one.
+    for (const line of lines) {
+      room(lh)
+      doc.text(line, MX + indent, y + size * 0.8)
+      y += lh
+    }
   }
   const heading = (text: string) => {
     room(40)
@@ -126,7 +95,7 @@ export function exportStoriesPdf(stories: StoryDoc[], collection = false) {
       styles: { font: 'helvetica', fontSize: 9.5, cellPadding: { top: 3, bottom: 3, left: 0, right: 8 }, textColor: INK },
       columnStyles: { 0: { cellWidth: 70, fontStyle: 'bold', textColor: INK2 } },
     })
-    y = lastY(doc) + 6
+    y = lastTableY(doc) + 6
 
     const criteria = story.criteria.filter((c) => criterionText(c))
     heading('Acceptance criteria')
@@ -140,7 +109,7 @@ export function exportStoriesPdf(stories: StoryDoc[], collection = false) {
         headStyles: { fillColor: [244, 243, 239], textColor: INK, fontStyle: 'bold' },
         columnStyles: { 0: { cellWidth: 22, halign: 'right' } },
       })
-      y = lastY(doc) + 4
+      y = lastTableY(doc) + 4
     } else {
       para('None written yet.', 9.5, INK2)
     }
@@ -164,7 +133,7 @@ export function exportStoriesPdf(stories: StoryDoc[], collection = false) {
         data.cell.styles.textColor = v === STATUS_TEXT.warn ? DANGER : v === STATUS_TEXT.ok ? ACCENT : INK2
       },
     })
-    y = lastY(doc) + 4
+    y = lastTableY(doc) + 4
 
     if (story.notes.trim()) {
       heading('Notes')
@@ -172,19 +141,9 @@ export function exportStoriesPdf(stories: StoryDoc[], collection = false) {
     }
   })
 
-  // Footer on every page
-  const pages = doc.getNumberOfPages()
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i)
-    doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(137, 135, 129)
-    // Author attribution: required by the AGPL additional terms in NOTICE.
-    const credit = 'Made with PM Tools by Patrick Poulin  ·  '
-    doc.text(credit, MX, PAGE_H - 28)
-    doc.textWithLink(REPO, MX + doc.getTextWidth(credit), PAGE_H - 28, { url: `https://${REPO}` })
-    doc.text(`Page ${i} of ${pages}`, PAGE_W - MX, PAGE_H - 28, { align: 'right' })
-  }
+  drawFooter(doc)
 
-  doc.save(`${slugify(docTitle)}-${date.toISOString().slice(0, 10)}.pdf`)
+  // slugify() falls back to "backlog" for titles with no Latin letters or digits.
+  const slug = slugify(docTitle)
+  doc.save(`${slug === 'backlog' ? 'user-story' : slug}-${date.toISOString().slice(0, 10)}.pdf`)
 }
-
-const lastY = (doc: jsPDF) => (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY

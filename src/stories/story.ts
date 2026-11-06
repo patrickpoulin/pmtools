@@ -31,6 +31,8 @@ export interface StoryDoc extends UserStory {
 }
 
 export const POINTS = [1, 2, 3, 5, 8, 13, 20]
+/** Size limits. The editor enforces the same ones, so loading saved data never cuts anything a user typed. */
+export const LIMITS = { title: 200, role: 500, text: 2000, notes: 10000, criteria: 100, stories: 1000 }
 /** Above this, most teams split the story before a sprint. */
 export const MAX_SPRINT_POINTS = 8
 /** More criteria than this usually means more than one story. */
@@ -69,8 +71,12 @@ export function cleanPart(part: keyof typeof PREFIX, text: string): string {
   return text.replace(PREFIX[part], '').trim().replace(/[.\s]+$/, '')
 }
 
-/** "a" or "an" for a role by how it usually sounds: an admin, an editor, but a user, a unit lead. */
-export const article = (role: string) => (/^(?:[aeio]|u(?!s[aeiou]|ni|ti|ri|k))/i.test(role) ? 'an' : 'a')
+/** "a" or "an" for a role by how it usually sounds: an admin, an editor, but a user, a UX designer. */
+export function article(role: string): 'a' | 'an' {
+  // Vowel letters that sound like "you" or "won": a user, a UX designer, a unicorn, a European, a one-off.
+  if (/^(?:eu|one\b|u(?:[bcfhjkmpqrstvwxyz][aeiou]|ni|x|i\b|s\b))/i.test(role)) return 'a'
+  return /^[aeiou]/i.test(role) ? 'an' : 'a'
+}
 
 /** The story sentence, e.g. "As an admin, I want to export reports, so that I can audit usage." */
 export function storySentence(s: Pick<UserStory, 'role' | 'want' | 'benefit'>): string {
@@ -175,26 +181,26 @@ export function storyMarkdown(title: string, s: UserStory): string {
   return lines.join('\n')
 }
 
-const text = (v: unknown, max = 500) => (typeof v === 'string' ? v.slice(0, max) : '')
+const text = (v: unknown, max = LIMITS.text) => (typeof v === 'string' ? v.slice(0, max) : '')
 
 /** Coerce untrusted JSON (saved data from an older version, a file) into a story, or null if it isn't one. */
 export function normalizeStory(raw: unknown): UserStory | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, any>
   const criteria = Array.isArray(r.criteria)
-    ? r.criteria.slice(0, 20).map((c: any) => ({ given: text(c?.given), when: text(c?.when), then: text(c?.then) }))
+    ? r.criteria.slice(0, LIMITS.criteria).map((c: any) => ({ given: text(c?.given), when: text(c?.when), then: text(c?.then) }))
     : []
   const points = typeof r.points === 'number' && Number.isFinite(r.points) && r.points > 0 ? Math.min(r.points, 100) : null
   const invest: UserStory['invest'] = {}
   for (const { key } of INVEST) if (r.invest?.[key] === true) invest[key] = true
   return {
-    role: text(r.role, 200),
+    role: text(r.role, LIMITS.role),
     want: text(r.want),
     benefit: text(r.benefit),
     criteria: criteria.length ? criteria : [emptyCriterion()],
     points,
     invest,
-    notes: text(r.notes, 2000),
+    notes: text(r.notes, LIMITS.notes),
   }
 }
 

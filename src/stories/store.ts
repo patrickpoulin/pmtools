@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { newId } from '../core/store'
-import { emptyStory, exampleStory, hasStory, normalizeStory, type StoryDoc } from './story'
+import { LIMITS, emptyStory, exampleStory, hasStory, normalizeStory, type StoryDoc } from './story'
 
 interface StoriesState {
   stories: StoryDoc[]
@@ -23,8 +23,9 @@ export function storiesFromBacklogItems(items: unknown): StoryDoc[] {
   return items.flatMap((it: any) => {
     const story = normalizeStory(it?.story)
     if (!hasStory(story) || String(it?.id).startsWith('sample-')) return []
-    const title = typeof it?.title === 'string' && it.title.trim() ? it.title.slice(0, 200) : 'Untitled story'
-    return [{ ...story, id: newId(), title }]
+    const title = typeof it?.title === 'string' && it.title.trim() ? it.title.slice(0, LIMITS.title) : 'Untitled story'
+    // Stable ids, so links to a moved story keep working.
+    return [{ ...story, id: `item-${String(it?.id)}`, title }]
   })
 }
 
@@ -40,13 +41,13 @@ function legacyStories(): StoryDoc[] {
 export function normalizeStoryDocs(raw: unknown): StoryDoc[] {
   if (!Array.isArray(raw)) return []
   const ids = new Set<string>()
-  return raw.slice(0, 500).flatMap((r: any) => {
+  return raw.slice(0, LIMITS.stories).flatMap((r: any) => {
     const story = normalizeStory(r)
     if (!story) return []
     let id = typeof r.id === 'string' && r.id ? r.id : newId()
     if (ids.has(id)) id = newId()
     ids.add(id)
-    return [{ ...story, id, title: typeof r.title === 'string' ? r.title.slice(0, 200) : 'Untitled story' }]
+    return [{ ...story, id, title: typeof r.title === 'string' ? r.title.slice(0, LIMITS.title) : 'Untitled story' }]
   })
 }
 
@@ -84,6 +85,11 @@ export const useStories = create<StoriesState>()(
       name: 'pmtools-stories',
       version: 1,
       merge: (persisted, current) => ({ ...current, ...loadStories(persisted, legacyStories) }),
+      // Save right after loading, so stories moved from backlog items and the example are kept for good,
+      // even if the user never edits one (the backlog can be cleared or replaced in the meantime).
+      onRehydrateStorage: () => (state) => {
+        if (state) setTimeout(() => useStories.setState({}), 0)
+      },
     },
   ),
 )
