@@ -34,12 +34,12 @@ export function HomePage() {
       </section>
 
       <section className="card">
-        <h2>Then write it up as user stories</h2>
+        <h2>Write user stories</h2>
         <p className="muted small">
-          Once you know what’s next, turn each item into a story the team can build and test: who it’s for, what they
-          need and why, Given / When / Then acceptance criteria, and an INVEST check that flags common problems as you type.
+          Planning something new? Write it as a story the team can build and test: who it’s for, what they need and
+          why, Given / When / Then acceptance criteria, and an INVEST check that flags common problems as you type.
         </p>
-        <Link className="btn" to="/stories">Write user stories</Link>
+        <Link className="btn" to="/stories">Write a user story</Link>
       </section>
 
       <section className="card">

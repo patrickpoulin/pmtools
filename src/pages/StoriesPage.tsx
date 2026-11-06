@@ -1,42 +1,40 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useStore } from '../core/store'
-import { downloadBlob, slugify } from '../core/io'
-import type { Item } from '../core/types'
+import { downloadBlob } from '../core/io'
+import { useStories } from '../stories/store'
 import {
-  INVEST, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, emptyStory, hasStory, investStatus,
-  readyCount, storyHints, storyMarkdown, storySentence, type AcceptanceCriterion, type UserStory,
+  INVEST, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, exampleStory, hasStory, investStatus,
+  readyCount, storyHints, storyMarkdown, storySentence, type AcceptanceCriterion, type StoryDoc, type UserStory,
 } from '../stories/story'
 
 const STATUS_ICON = { ok: '✓', warn: '⚠', todo: '○' } as const
 
 export function StoriesPage() {
-  const backlog = useStore((s) => s.backlog)
+  const { stories, addStory } = useStories()
   const [params, setParams] = useSearchParams()
-  const items = backlog.items
-  const selected = items.find((i) => i.id === params.get('item')) ?? items[0]
-  const written = items.filter((i) => hasStory(i.story))
+  const selected = stories.find((s) => s.id === params.get('story')) ?? stories[0]
+  const select = (id: string) => setParams({ story: id }, { replace: true })
+  const written = stories.filter(hasStory)
 
-  const allMarkdown = () =>
-    [`# ${backlog.name}: user stories`, ...written.map((i) => storyMarkdown(i.title, i.story!))].join('\n\n') + '\n'
+  const allMarkdown = () => ['# User stories', ...written.map((s) => storyMarkdown(s.title, s))].join('\n\n') + '\n'
 
   return (
     <div className="stack">
       <div className="page-head">
         <div>
-          <div className="eyebrow">Write it up</div>
+          <div className="eyebrow">Planning</div>
           <h1>User stories</h1>
           <p className="muted" style={{ margin: 0 }}>
-            Turn a backlog item into a story the team can build and test: who it’s for, what they need, why it matters,
-            and how you’ll know it’s done.
+            Write a new story step by step: who it’s for, what they need, why it matters, and how you’ll know it’s done.
           </p>
         </div>
         <div className="btn-row">
-          <Link className="btn" to="/backlog">Edit backlog</Link>
+          <button className="btn primary" onClick={() => select(addStory())}>+ New story</button>
           <button
             className="btn"
             disabled={!written.length}
-            onClick={() => downloadBlob(allMarkdown(), `${slugify(backlog.name)}-stories.md`, 'text/markdown')}
+            onClick={() => downloadBlob(allMarkdown(), 'user-stories.md', 'text/markdown')}
           >
             Download all (.md)
           </button>
@@ -45,26 +43,28 @@ export function StoriesPage() {
 
       {!selected ? (
         <div className="card empty">
-          <p>Your backlog is empty. Add an item first, then write its story here.</p>
-          <Link className="btn primary" to="/backlog">Add items</Link>
+          <p>You haven’t written any stories yet.</p>
+          <div className="btn-row" style={{ justifyContent: 'center' }}>
+            <button className="btn primary" onClick={() => select(addStory())}>Write your first story</button>
+            <button className="btn" onClick={() => select(addStory(exampleStory()))}>Start from an example</button>
+          </div>
         </div>
       ) : (
         <div className="story-layout">
-          <nav className="card story-list" aria-label="Backlog items">
-            <h2>Items</h2>
+          <nav className="card story-list" aria-label="Your stories">
+            <h2>Your stories</h2>
             <ol>
-              {items.map((item, i) => (
-                <li key={item.id}>
+              {stories.map((story) => (
+                <li key={story.id}>
                   <button
-                    className={item.id === selected.id ? 'active' : ''}
-                    aria-current={item.id === selected.id ? 'true' : undefined}
-                    onClick={() => setParams({ item: item.id }, { replace: true })}
+                    className={story.id === selected.id ? 'active' : ''}
+                    aria-current={story.id === selected.id ? 'true' : undefined}
+                    onClick={() => select(story.id)}
                   >
-                    <span className="dot-num">{i + 1}</span>
                     <span className="story-list-title">
-                      {item.title}
+                      {story.title.trim() || 'Untitled story'}
                       <span className="small muted">
-                        {hasStory(item.story) ? `INVEST ${readyCount(item.story)} of 6` : 'No story yet'}
+                        {hasStory(story) ? `INVEST ${readyCount(story)} of 6` : 'Not started'}
                       </span>
                     </span>
                   </button>
@@ -72,7 +72,7 @@ export function StoriesPage() {
               ))}
             </ol>
           </nav>
-          <StoryEditor key={selected.id} item={selected} number={items.indexOf(selected) + 1} />
+          <StoryEditor key={selected.id} story={selected} />
         </div>
       )}
 
@@ -81,23 +81,29 @@ export function StoriesPage() {
   )
 }
 
-function StoryEditor({ item, number }: { item: Item; number: number }) {
-  const updateItem = useStore((s) => s.updateItem)
-  const story = item.story ?? emptyStory()
-  const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null)
-  const [confirmClear, setConfirmClear] = useState(false)
+function StoryEditor({ story }: { story: StoryDoc }) {
+  const { updateStory, removeStory } = useStories()
+  const addItem = useStore((s) => s.addItem)
+  const [msg, setMsg] = useState<{ text: string; error?: boolean; backlog?: boolean } | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const set = (patch: Partial<UserStory>) => updateItem(item.id, { story: { ...story, ...patch } })
+  const set = (patch: Partial<StoryDoc>) => updateStory(story.id, patch)
   const setCriterion = (i: number, patch: Partial<AcceptanceCriterion>) =>
     set({ criteria: story.criteria.map((c, j) => (j === i ? { ...c, ...patch } : c)) })
+  const title = story.title.trim() || 'Untitled story'
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(storyMarkdown(item.title, story))
+      await navigator.clipboard.writeText(storyMarkdown(title, story))
       setMsg({ text: 'Story copied as Markdown. Paste it into your tracker or doc.' })
     } catch {
       setMsg({ text: 'Could not copy to the clipboard. Your browser may have blocked it.', error: true })
     }
+  }
+
+  const toBacklog = () => {
+    addItem({ title, description: storySentence(story) })
+    setMsg({ text: `Added “${title}” to your backlog.`, backlog: true })
   }
 
   const role = cleanPart('role', story.role)
@@ -105,11 +111,15 @@ function StoryEditor({ item, number }: { item: Item; number: number }) {
   return (
     <div className="stack">
       <div className="card stack">
-        <div>
-          <div className="eyebrow">Item {number}</div>
-          <h2 style={{ margin: 0 }}>{item.title}</h2>
-          {item.description && <p className="muted small" style={{ margin: '4px 0 0' }}>{item.description}</p>}
-        </div>
+        <label className="field">
+          Story name
+          <input
+            value={story.title}
+            placeholder="e.g. Invite teammates"
+            onChange={(e) => set({ title: e.target.value })}
+          />
+          <span className="small muted hint">A short name so you can find it in the list. It becomes the heading when you copy it.</span>
+        </label>
 
         <div className="story-parts">
           <label className="field">
@@ -221,25 +231,24 @@ function StoryEditor({ item, number }: { item: Item; number: number }) {
       <div className="card stack">
         <div className="btn-row">
           <button className="btn primary" onClick={copy} disabled={!hasStory(story)}>Copy as Markdown</button>
-          {confirmClear ? (
+          <button className="btn" onClick={toBacklog} disabled={!hasStory(story)}>Add to backlog</button>
+          {confirmDelete ? (
             <>
-              <button
-                className="btn danger"
-                onClick={() => { updateItem(item.id, { story: null }); setConfirmClear(false); setMsg(null) }}
-              >
-                Yes, clear this story
-              </button>
-              <button className="btn ghost" onClick={() => setConfirmClear(false)}>Cancel</button>
+              <button className="btn danger" onClick={() => removeStory(story.id)}>Yes, delete this story</button>
+              <button className="btn ghost" onClick={() => setConfirmDelete(false)}>Cancel</button>
             </>
           ) : (
-            <button className="btn ghost danger" disabled={!item.story} onClick={() => setConfirmClear(true)}>
-              Clear story
-            </button>
+            <button className="btn ghost danger" onClick={() => setConfirmDelete(true)}>Delete story</button>
           )}
         </div>
-        {msg && <div className={`notice${msg.error ? ' error' : ''}`} role="status">{msg.text}</div>}
+        {msg && (
+          <div className={`notice${msg.error ? ' error' : ''}`} role="status">
+            {msg.text} {msg.backlog && <Link to="/backlog">Open the backlog</Link>}
+          </div>
+        )}
         <p className="small muted" style={{ margin: 0 }}>
-          Stories save automatically with your backlog and are included in JSON files and share links.
+          Stories save automatically in this browser, separately from your backlog. Add one to the backlog when
+          you’re ready to prioritize it against everything else.
         </p>
       </div>
     </div>

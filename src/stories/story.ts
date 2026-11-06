@@ -1,6 +1,6 @@
 /**
  * User stories: the "As a / I want / so that" sentence, acceptance criteria and an INVEST check.
- * A story belongs to a backlog item (item.story), so it travels with JSON files and share links.
+ * Stories are written from scratch, separate from the prioritization backlog, and saved in their own list.
  */
 
 /** One acceptance criterion in Given / When / Then form. Any part may be empty. */
@@ -22,6 +22,12 @@ export interface UserStory {
   /** INVEST qualities the writer has confirmed by hand. */
   invest: Partial<Record<InvestKey, boolean>>
   notes: string
+}
+
+/** A saved story with a short name for the list. */
+export interface StoryDoc extends UserStory {
+  id: string
+  title: string
 }
 
 export const POINTS = [1, 2, 3, 5, 8, 13, 20]
@@ -171,12 +177,8 @@ export function storyMarkdown(title: string, s: UserStory): string {
 
 const text = (v: unknown, max = 500) => (typeof v === 'string' ? v.slice(0, max) : '')
 
-/**
- * Coerce untrusted JSON (file, share link) into a story. Returns null for "no story" and undefined
- * when the field is absent, so the sample backfill can tell an item never had one from one cleared.
- */
-export function normalizeStory(raw: unknown): UserStory | null | undefined {
-  if (raw === undefined) return undefined
+/** Coerce untrusted JSON (saved data from an older version, a file) into a story, or null if it isn't one. */
+export function normalizeStory(raw: unknown): UserStory | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, any>
   const criteria = Array.isArray(r.criteria)
@@ -195,3 +197,19 @@ export function normalizeStory(raw: unknown): UserStory | null | undefined {
     notes: text(r.notes, 2000),
   }
 }
+
+/** A finished example, to show what a good story looks like. */
+export const exampleStory = (): Omit<StoryDoc, 'id'> => ({
+  title: 'Onboarding checklist (example)',
+  role: 'new workspace admin',
+  want: 'a short checklist of setup steps after I sign up',
+  benefit: 'I can get my team to their first useful report without booking a call with support',
+  criteria: [
+    { given: 'I have just created a workspace', when: 'I land on the home page', then: 'I see a checklist of 4 setup steps with none completed' },
+    { given: 'the checklist is showing', when: 'I connect a data source', then: 'that step is marked done without reloading the page' },
+    { given: 'I have completed every step', when: 'I return to the home page', then: 'the checklist is replaced by a link to my first report' },
+  ],
+  points: 5,
+  invest: { independent: true, negotiable: true, valuable: true, estimable: true, small: true, testable: true },
+  notes: 'Out of scope: in-app video tours.',
+})
