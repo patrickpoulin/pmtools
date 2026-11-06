@@ -56,6 +56,12 @@ export const PAGES: PageMeta[] = [
     description: 'See how each item ranks under every prioritization method and spot where they disagree.',
   },
   {
+    path: 'stories/',
+    title: 'User Story Writer — PM Tools',
+    description:
+      'Write clear user stories step by step: As a / I want / so that, Given-When-Then acceptance criteria and an INVEST check. Free, private, copies as Markdown.',
+  },
+  {
     path: 'import/',
     title: 'Open a Shared Backlog — PM Tools',
     description: 'Open a product backlog shared with you.',

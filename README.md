@@ -8,6 +8,7 @@ Live at **https://patrickpoulin.github.io/pmtools/**.
 - **MoSCoW**: a drag-and-drop Must / Should / Could / Won't board checked against the release's capacity (DSDM guidelines: Must ≤ ~60%, Must + Should ≈ 80%), with suggested cuts when the plan doesn't fit.
 - **Weighted Scoring**: your own criteria (benefit or cost) with relative weights; a ranked bar per item split by criterion so you can see what drives each score.
 - **Compare**: shows each item's rank under every method and flags where the methods disagree.
+- **User stories**: a guided writer that turns a backlog item into an "As a / I want / so that" story with Given / When / Then acceptance criteria, an estimate and an INVEST check that flags common problems as you type. Copy as Markdown or download them all.
 - **PDF export** for each method, with a vector chart, a scores table, decision notes and a method reference.
 - **One shared backlog** that saves automatically to `localStorage`, with JSON save/open, CSV import/export, and share links that carry the backlog in the URL.
 
@@ -44,7 +45,8 @@ src/
 ├─ methods/    registry + one folder per method (fields, scoring, chart, copy)
 ├─ pdf/        jsPDF + svg2pdf + autotable report builder (lazy-loaded)
 ├─ components/ score table, interactive chart wrapper, backlog actions, theme toggle
-└─ pages/      Home, Backlog, Method, Compare, Import (share links)
+├─ stories/    user story model, INVEST hints and Markdown export
+└─ pages/      Home, Backlog, Method, Compare, User stories, Import (share links)
 ```
 
 ## License
