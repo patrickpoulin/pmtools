@@ -8,6 +8,7 @@ import { BacklogPage } from './pages/BacklogPage'
 import { MethodPage } from './pages/MethodPage'
 import { ComparePage } from './pages/ComparePage'
 import { ImportPage } from './pages/ImportPage'
+import { StoriesPage } from './pages/StoriesPage'
 
 const REPO_URL = 'https://github.com/patrickpoulin/pmtools'
 
@@ -37,6 +38,7 @@ export function App() {
               </NavLink>
             ))}
             <NavLink to="/compare">Compare</NavLink>
+            <NavLink to="/stories">User stories</NavLink>
           </nav>
           <ThemeToggle />
         </div>
@@ -47,6 +49,7 @@ export function App() {
           <Route path="/backlog" element={<BacklogPage />} />
           <Route path="/method/:id" element={<MethodPage />} />
           <Route path="/compare" element={<ComparePage />} />
+          <Route path="/stories" element={<StoriesPage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="*" element={<HomePage />} />
         </Routes>

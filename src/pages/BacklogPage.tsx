@@ -32,6 +32,7 @@ export function BacklogPage() {
               Score with {m.name}
             </Link>
           ))}
+          <Link className="btn" to="/stories">Write user stories</Link>
         </div>
       </div>
 
