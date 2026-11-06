@@ -1,7 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { useStore } from '../core/store'
-import { METHODS } from '../methods/registry'
 import { BacklogActions } from '../components/BacklogActions'
 import { BacklogResetActions } from '../components/BacklogResetActions'
 
@@ -27,14 +25,7 @@ export function BacklogPage() {
             Add the ideas you want to prioritize. You enter them once here, and every method scores the same list.
           </p>
         </div>
-        <div className="btn-row">
-          {METHODS.map((m) => (
-            <Link key={m.id} className="btn" to={`/method/${m.id}`}>
-              Score with {m.name}
-            </Link>
-          ))}
-          <Link className="btn" to="/stories">Write user stories</Link>
-        </div>
+        <BacklogResetActions />
       </div>
 
       <div className="card grid-2">
@@ -49,10 +40,6 @@ export function BacklogPage() {
       </div>
 
       <div className="card">
-        <div className="page-head" style={{ alignItems: 'center', marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>Items ({backlog.items.length})</h2>
-          <BacklogResetActions />
-        </div>
         <div className="table-wrap">
           <table>
             <thead>
