@@ -25,7 +25,7 @@ export function ImportPage() {
   if (!result.backlog) {
     return (
       <div className="card stack">
-        <h1>Couldn’t open shared backlog</h1>
+        <h1>Couldn’t Open Shared Backlog</h1>
         <div className="notice error">{result.error}</div>
         <Link className="btn" to="/">Go to home</Link>
       </div>

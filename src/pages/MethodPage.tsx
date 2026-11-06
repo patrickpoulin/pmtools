@@ -107,7 +107,7 @@ function MethodView({ method }: { method: MethodDef }) {
 
           <div className="card">
             <label className="field">
-              <h2 style={{ color: 'var(--text-primary)' }}>Decision notes</h2>
+              <h2 style={{ color: 'var(--text-primary)' }}>Decision Notes</h2>
               <span className="small muted" style={{ fontWeight: 400 }}>
                 Record what you decided and why. Notes are included in the PDF.
               </span>
@@ -127,7 +127,7 @@ function MethodView({ method }: { method: MethodDef }) {
 function AboutCard({ method }: { method: MethodDef }) {
   return (
     <div className="card">
-      <h3>How {method.name} works</h3>
+      <h3>How {method.name} Works</h3>
       <p className="small">{method.about.summary}</p>
       <p className="small"><code>{method.formula}</code></p>
       <details className="about small">
@@ -146,7 +146,7 @@ function AboutCard({ method }: { method: MethodDef }) {
 function MethodGuide({ method, guide }: { method: MethodDef; guide: NonNullable<MethodDef['guide']> }) {
   return (
     <div className="card">
-      <h2>How {method.name} works</h2>
+      <h2>How {method.name} Works</h2>
       <p>{method.about.summary}</p>
       <div className="table-wrap">
         <table className="guide-table">
@@ -171,11 +171,11 @@ function MethodGuide({ method, guide }: { method: MethodDef; guide: NonNullable<
       </div>
       <div className="grid-2" style={{ marginTop: 20 }}>
         <div>
-          <h3>When to use it</h3>
+          <h3>When to Use It</h3>
           <ul className="small">{method.about.whenToUse.map((t) => <li key={t}>{t}</li>)}</ul>
         </div>
         <div>
-          <h3>Common pitfalls</h3>
+          <h3>Common Pitfalls</h3>
           <ul className="small">{method.about.pitfalls.map((t) => <li key={t}>{t}</li>)}</ul>
         </div>
       </div>
@@ -230,7 +230,7 @@ function TopPicks({ method }: { method: MethodDef }) {
   const ranked = method.rank(backlog)
   return (
     <div className="card">
-      <h3>Top priorities</h3>
+      <h3>Top Priorities</h3>
       <ol style={{ margin: 0, paddingLeft: '1.2em' }}>
         {ranked.slice(0, 5).map((r) => (
           <li key={r.item.id} style={{ marginBottom: 4 }}>
@@ -254,7 +254,7 @@ function BalancePanel() {
 
   return (
     <div className="card">
-      <h3>Scope check</h3>
+      <h3>Scope Check</h3>
       <div className="grid-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
         <div className="stack">
           <label className="field">

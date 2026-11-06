@@ -98,7 +98,7 @@ export function exportStoriesPdf(stories: StoryDoc[], collection = false) {
     y = lastTableY(doc) + 6
 
     const criteria = story.criteria.filter((c) => criterionText(c))
-    heading('Acceptance criteria')
+    heading('Acceptance Criteria')
     if (criteria.length) {
       autoTable(doc, {
         startY: y,
@@ -114,7 +114,7 @@ export function exportStoriesPdf(stories: StoryDoc[], collection = false) {
       para('None written yet.', 9.5, INK2)
     }
 
-    heading('INVEST check')
+    heading('INVEST Check')
     const status = investStatus(story)
     const hints = storyHints(story)
     autoTable(doc, {

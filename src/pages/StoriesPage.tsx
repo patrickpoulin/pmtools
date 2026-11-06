@@ -26,7 +26,7 @@ export function StoriesPage() {
       <div className="page-head">
         <div>
           <div className="eyebrow">Planning</div>
-          <h1>User stories</h1>
+          <h1>User Stories</h1>
           <p className="muted" style={{ margin: 0 }}>
             Write a new story step by step: who it’s for, what they need, why it matters, and how you’ll know it’s done.
           </p>
@@ -53,10 +53,10 @@ export function StoriesPage() {
             aria-current={showGuide ? 'page' : undefined}
             onClick={() => setParams({ guide: '' }, { replace: true })}
           >
-            <span aria-hidden="true">?</span> How to write a good story
+            <span aria-hidden="true">?</span> How to Write a Good Story
           </button>
           <div className="story-list-head">
-            <h2>Your stories</h2>
+            <h2>Your Stories</h2>
             <button className="btn primary" disabled={stories.length >= LIMITS.stories} onClick={() => select(addStory())}>
               + New
             </button>
@@ -80,6 +80,17 @@ export function StoriesPage() {
             ))}
           </ol>
           {!stories.length && <p className="small muted" style={{ margin: '4px 8px' }}>No stories yet. Start one with + New.</p>}
+          {!stories.some((s) => s.id === EXAMPLE_ID) && (
+            <button
+              className="btn ghost story-example-btn"
+              onClick={() => {
+                restoreExample()
+                select(EXAMPLE_ID)
+              }}
+            >
+              + Add the example story
+            </button>
+          )}
         </nav>
         {selected ? (
           <StoryEditor
@@ -95,17 +106,7 @@ export function StoriesPage() {
             }}
           />
         ) : (
-          <StoryGuide
-            onStart={() => select(addStory())}
-            onExample={
-              stories.some((s) => s.id === EXAMPLE_ID)
-                ? undefined
-                : () => {
-                    restoreExample()
-                    select(EXAMPLE_ID)
-                  }
-            }
-          />
+          <StoryGuide onStart={() => select(addStory())} />
         )}
       </div>
     </div>
@@ -160,7 +161,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
     <div className="stack">
       <div className="card stack">
         <label className="field">
-          Story name
+          Story Name
           <input
             value={story.title}
             maxLength={LIMITS.title}
@@ -172,7 +173,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
 
         <div className="story-parts">
           <label className="field">
-            1. Who is it for?
+            1. Who Is It For?
             <span className="story-input">
               <span className="story-prefix">As {role ? article(role) : 'a'}</span>
               <input
@@ -185,7 +186,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
             <span className="small muted hint">A specific role or persona, not just “user”.</span>
           </label>
           <label className="field">
-            2. What do they want?
+            2. What Do They Want?
             <span className="story-input">
               <span className="story-prefix">I want</span>
               <input
@@ -198,7 +199,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
             <span className="small muted hint">The need or goal in their words. Leave the design to the team.</span>
           </label>
           <label className="field">
-            3. Why does it matter?
+            3. Why Does It Matter?
             <span className="story-input">
               <span className="story-prefix">so that</span>
               <input
@@ -216,7 +217,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
       </div>
 
       <div className="card">
-        <h3>4. Acceptance criteria</h3>
+        <h3>4. Acceptance Criteria</h3>
         <p className="small muted">
           The conditions that must be true for the story to be done. Write each as a scenario: the starting situation,
           what the person does, and the result anyone can check.
@@ -274,7 +275,7 @@ function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onP
           <span className="small muted hint">Story points agreed with the team. Anything over 8 is a sign to split.</span>
         </label>
         <label className="field">
-          Notes (optional)
+          Notes (Optional)
           <textarea
             value={story.notes}
             maxLength={LIMITS.notes}
@@ -325,7 +326,7 @@ function InvestCheck({ story, onToggle }: { story: UserStory; onToggle: (key: ke
   const hints = storyHints(story)
   return (
     <div className="card">
-      <h3>6. INVEST check</h3>
+      <h3>6. INVEST Check</h3>
       <p className="small muted">
         A good story is Independent, Negotiable, Valuable, Estimable, Small and Testable. Warnings come from what you
         wrote above; tick each quality once you and the team agree it holds.
@@ -373,15 +374,12 @@ const SPLITS: [string, string][] = [
 ]
 
 /** Plain explainer of what makes a good story, shown below the editor. */
-function StoryGuide({ onStart, onExample }: { onStart: () => void; onExample?: () => void }) {
+function StoryGuide({ onStart }: { onStart: () => void }) {
   return (
     <div className="card">
       <div className="page-head" style={{ marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>How to write a good user story</h2>
-        <div className="btn-row">
-          {onExample && <button className="btn" onClick={onExample}>Add the example story</button>}
-          <button className="btn primary" onClick={onStart}>Start a new story</button>
-        </div>
+        <h2 style={{ margin: 0 }}>How to Write a Good User Story</h2>
+        <button className="btn primary" onClick={onStart}>Start a new story</button>
       </div>
       <p>
         A user story is a short description of a change from the point of view of the person who benefits. It is a
@@ -390,7 +388,7 @@ function StoryGuide({ onStart, onExample }: { onStart: () => void; onExample?: (
       </p>
       <div className="grid-2">
         <div>
-          <h3>The three parts</h3>
+          <h3>The Three Parts</h3>
           <ul className="small">
             <li><strong>As a…</strong> names a real role or persona, so the team pictures someone specific.</li>
             <li><strong>I want…</strong> states the need, not the screen. “Find last month’s invoices” beats “add a date filter dropdown”.</li>
@@ -398,7 +396,7 @@ function StoryGuide({ onStart, onExample }: { onStart: () => void; onExample?: (
           </ul>
         </div>
         <div>
-          <h3>Acceptance criteria</h3>
+          <h3>Acceptance Criteria</h3>
           <ul className="small">
             <li>Write them before the sprint starts, with the team, so estimates include them.</li>
             <li>Use <strong>Given / When / Then</strong>: a starting situation, an action, and an observable result.</li>
@@ -420,7 +418,7 @@ function StoryGuide({ onStart, onExample }: { onStart: () => void; onExample?: (
           </tbody>
         </table>
       </div>
-      <h3 style={{ marginTop: 20 }}>Too big? Ways to split a story</h3>
+      <h3 style={{ marginTop: 20 }}>Too Big? Ways to Split a Story</h3>
       <p className="small muted">Each slice should still deliver something a user can see and use, end to end.</p>
       <div className="table-wrap">
         <table className="guide-table">

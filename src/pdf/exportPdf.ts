@@ -150,7 +150,7 @@ export async function exportMethodPdf(method: MethodDef, backlog: Backlog) {
   y = lastTableY(doc) + 24
 
   const notes = backlog.notes[method.id]?.trim()
-  if (notes) section('Decision notes', notes.split('\n'))
+  if (notes) section('Decision Notes', notes.split('\n'))
   section(`About ${method.name}`, [method.about.summary, '', ...method.reference.map((r) => `•  ${r}`)])
 
   drawFooter(doc)

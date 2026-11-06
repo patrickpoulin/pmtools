@@ -20,7 +20,7 @@ export function BacklogPage() {
       <div className="page-head">
         <div>
           <div className="eyebrow">Step 1</div>
-          <h1>Your backlog</h1>
+          <h1>Your Backlog</h1>
           <p className="muted" style={{ margin: 0 }}>
             Add the ideas you want to prioritize. You enter them once here, and every method scores the same list.
           </p>
@@ -88,7 +88,7 @@ export function BacklogPage() {
       </div>
 
       <div className="card">
-        <h2>Save, share and import</h2>
+        <h2>Save, Share and Import</h2>
         <p className="small muted">
           Your backlog saves automatically in this browser. Use these to back it up, move it to another device,
           or share it with your team.
