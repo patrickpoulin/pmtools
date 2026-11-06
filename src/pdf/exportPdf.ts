@@ -8,15 +8,7 @@ import { slugify } from '../core/io'
 import type { MethodDef } from '../methods/types'
 import { fieldsFor } from '../methods/types'
 import { PRINT_PALETTE } from '../methods/registry'
-
-const REPO = 'github.com/patrickpoulin/pmtools'
-const PAGE_W = 612
-const PAGE_H = 792
-const MX = 48
-const CONTENT_W = PAGE_W - MX * 2
-const INK: [number, number, number] = [11, 11, 11]
-const INK2: [number, number, number] = [82, 81, 78]
-const ACCENT: [number, number, number] = [42, 120, 214]
+import { ACCENT, CONTENT_W, INK, INK2, MX, PAGE_H, PAGE_W, drawFooter, lastTableY } from './common'
 
 /** jsPDF's built-in fonts are WinAnsi; swap the few characters outside it. */
 const safe = (s: string) => s.replace(/→/g, '->').replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
@@ -155,23 +147,13 @@ export async function exportMethodPdf(method: MethodDef, backlog: Backlog) {
       if (showResult && data.column.index === fields.length + 2) data.cell.styles.fontStyle = 'bold'
     },
   })
-  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24
+  y = lastTableY(doc) + 24
 
   const notes = backlog.notes[method.id]?.trim()
   if (notes) section('Decision notes', notes.split('\n'))
   section(`About ${method.name}`, [method.about.summary, '', ...method.reference.map((r) => `•  ${r}`)])
 
-  // Footer on every page
-  const pages = doc.getNumberOfPages()
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i)
-    doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(137, 135, 129)
-    // Author attribution: required by the AGPL additional terms in NOTICE.
-    const credit = 'Made with PM Tools by Patrick Poulin  ·  '
-    doc.text(credit, MX, PAGE_H - 28)
-    doc.textWithLink(REPO, MX + doc.getTextWidth(credit), PAGE_H - 28, { url: `https://${REPO}` })
-    doc.text(`Page ${i} of ${pages}`, PAGE_W - MX, PAGE_H - 28, { align: 'right' })
-  }
+  drawFooter(doc)
 
   doc.save(`${slugify(backlog.name)}-${method.id}-${date.toISOString().slice(0, 10)}.pdf`)
 }

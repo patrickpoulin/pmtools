@@ -2,16 +2,16 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useStore } from '../core/store'
 import { downloadBlob } from '../core/io'
-import { useStories } from '../stories/store'
+import { EXAMPLE_ID, useStories } from '../stories/store'
 import {
-  INVEST, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, hasStory, investStatus,
+  INVEST, LIMITS, MAX_CRITERIA, POINTS, article, cleanPart, emptyCriterion, hasStory, investStatus,
   readyCount, storyHints, storyMarkdown, storySentence, type AcceptanceCriterion, type StoryDoc, type UserStory,
 } from '../stories/story'
 
 const STATUS_ICON = { ok: '✓', warn: '⚠', todo: '○' } as const
 
 export function StoriesPage() {
-  const { stories, addStory } = useStories()
+  const { stories, addStory, removeStory, restoreExample } = useStories()
   const [params, setParams] = useSearchParams()
   const showGuide = params.has('guide') || !stories.length
   const selected = showGuide ? undefined : stories.find((s) => s.id === params.get('story')) ?? stories[0]
@@ -19,7 +19,7 @@ export function StoriesPage() {
   const written = stories.filter(hasStory)
   const [pdf, setPdf] = useStoryPdf()
 
-  const allMarkdown = () => ['# User stories', ...written.map((s) => storyMarkdown(s.title, s))].join('\n\n') + '\n'
+  const allMarkdown = () => ['# User stories', ...written.map((s) => storyMarkdown(s.title.trim() || 'Untitled story', s))].join('\n\n') + '\n'
 
   return (
     <div className="stack">
@@ -57,7 +57,9 @@ export function StoriesPage() {
           </button>
           <div className="story-list-head">
             <h2>Your stories</h2>
-            <button className="btn primary" onClick={() => select(addStory())}>+ New</button>
+            <button className="btn primary" disabled={stories.length >= LIMITS.stories} onClick={() => select(addStory())}>
+              + New
+            </button>
           </div>
           <ol>
             {stories.map((story) => (
@@ -80,9 +82,30 @@ export function StoriesPage() {
           {!stories.length && <p className="small muted" style={{ margin: '4px 8px' }}>No stories yet. Start one with + New.</p>}
         </nav>
         {selected ? (
-          <StoryEditor key={selected.id} story={selected} onPdf={() => setPdf([selected])} pdfBusy={pdf.busy} />
+          <StoryEditor
+            key={selected.id}
+            story={selected}
+            onPdf={() => setPdf([selected])}
+            pdfBusy={pdf.busy}
+            onDelete={() => {
+              // Back to the top of the page and the first story, rather than mid-way down the next one.
+              removeStory(selected.id)
+              setParams({}, { replace: true })
+              window.scrollTo(0, 0)
+            }}
+          />
         ) : (
-          <StoryGuide onStart={() => select(addStory())} />
+          <StoryGuide
+            onStart={() => select(addStory())}
+            onExample={
+              stories.some((s) => s.id === EXAMPLE_ID)
+                ? undefined
+                : () => {
+                    restoreExample()
+                    select(EXAMPLE_ID)
+                  }
+            }
+          />
         )}
       </div>
     </div>
@@ -106,8 +129,8 @@ function useStoryPdf() {
   return [state, run] as const
 }
 
-function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => void; pdfBusy: boolean }) {
-  const { updateStory, removeStory } = useStories()
+function StoryEditor({ story, onPdf, pdfBusy, onDelete }: { story: StoryDoc; onPdf: () => void; pdfBusy: boolean; onDelete: () => void }) {
+  const updateStory = useStories((s) => s.updateStory)
   const addItem = useStore((s) => s.addItem)
   const [msg, setMsg] = useState<{ text: string; error?: boolean; backlog?: boolean } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -140,6 +163,7 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
           Story name
           <input
             value={story.title}
+            maxLength={LIMITS.title}
             placeholder="e.g. Invite teammates"
             onChange={(e) => set({ title: e.target.value })}
           />
@@ -150,9 +174,10 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
           <label className="field">
             1. Who is it for?
             <span className="story-input">
-              <span className="story-prefix">As {article(role || 'a')}</span>
+              <span className="story-prefix">As {role ? article(role) : 'a'}</span>
               <input
                 value={story.role}
+                maxLength={LIMITS.role}
                 placeholder="new workspace admin"
                 onChange={(e) => set({ role: e.target.value })}
               />
@@ -165,6 +190,7 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
               <span className="story-prefix">I want</span>
               <input
                 value={story.want}
+                maxLength={LIMITS.text}
                 placeholder="to invite my teammates in one step"
                 onChange={(e) => set({ want: e.target.value })}
               />
@@ -177,6 +203,7 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
               <span className="story-prefix">so that</span>
               <input
                 value={story.benefit}
+                maxLength={LIMITS.text}
                 placeholder="we can start working together on day one"
                 onChange={(e) => set({ benefit: e.target.value })}
               />
@@ -203,6 +230,7 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
                   <span className="story-prefix">{k[0].toUpperCase() + k.slice(1)}</span>
                   <input
                     value={c[k]}
+                    maxLength={LIMITS.text}
                     placeholder={CRITERION_PLACEHOLDER[k]}
                     onChange={(e) => setCriterion(i, { [k]: e.target.value })}
                   />
@@ -220,7 +248,11 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
           ))}
         </div>
         <div className="btn-row" style={{ marginTop: 12 }}>
-          <button className="btn" onClick={() => set({ criteria: [...story.criteria, emptyCriterion()] })}>
+          <button
+            className="btn"
+            disabled={story.criteria.length >= LIMITS.criteria}
+            onClick={() => set({ criteria: [...story.criteria, emptyCriterion()] })}
+          >
             + Add criterion
           </button>
           <span className="small muted">Most stories need 2 to {MAX_CRITERIA - 2}. Include at least one “unhappy path”.</span>
@@ -235,7 +267,7 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
             onChange={(e) => set({ points: e.target.value === '' ? null : Number(e.target.value) })}
           >
             <option value="">Not estimated</option>
-            {POINTS.map((p) => (
+            {(story.points === null || POINTS.includes(story.points) ? POINTS : [...POINTS, story.points].sort((a, b) => a - b)).map((p) => (
               <option key={p} value={p}>{p} {p === 1 ? 'point' : 'points'}</option>
             ))}
           </select>
@@ -245,6 +277,7 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
           Notes (optional)
           <textarea
             value={story.notes}
+            maxLength={LIMITS.notes}
             placeholder="Out of scope, open questions, links to designs or research"
             onChange={(e) => set({ notes: e.target.value })}
           />
@@ -260,7 +293,7 @@ function StoryEditor({ story, onPdf, pdfBusy }: { story: StoryDoc; onPdf: () => 
           <button className="btn" onClick={toBacklog} disabled={!hasStory(story)}>Add to backlog</button>
           {confirmDelete ? (
             <>
-              <button className="btn danger" onClick={() => removeStory(story.id)}>Yes, delete this story</button>
+              <button className="btn danger" onClick={onDelete}>Yes, delete this story</button>
               <button className="btn ghost" onClick={() => setConfirmDelete(false)}>Cancel</button>
             </>
           ) : (
@@ -340,12 +373,15 @@ const SPLITS: [string, string][] = [
 ]
 
 /** Plain explainer of what makes a good story, shown below the editor. */
-function StoryGuide({ onStart }: { onStart: () => void }) {
+function StoryGuide({ onStart, onExample }: { onStart: () => void; onExample?: () => void }) {
   return (
     <div className="card">
       <div className="page-head" style={{ marginBottom: 12 }}>
         <h2 style={{ margin: 0 }}>How to write a good user story</h2>
-        <button className="btn primary" onClick={onStart}>Start a new story</button>
+        <div className="btn-row">
+          {onExample && <button className="btn" onClick={onExample}>Add the example story</button>}
+          <button className="btn primary" onClick={onStart}>Start a new story</button>
+        </div>
       </div>
       <p>
         A user story is a short description of a change from the point of view of the person who benefits. It is a
