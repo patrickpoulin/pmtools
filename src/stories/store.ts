@@ -54,6 +54,16 @@ export function normalizeStoryDocs(raw: unknown): StoryDoc[] {
 export const EXAMPLE_ID = 'example'
 export const withExample = (stories: StoryDoc[]): StoryDoc[] => [...stories, { ...exampleStory(), id: EXAMPLE_ID }]
 
+/**
+ * The saved stories on load: what was saved (cleaned), or for a first visit any stories from the old
+ * backlog-item version. The example is added once per user, so a deleted example stays deleted.
+ */
+export function loadStories(persisted: unknown, legacy: () => StoryDoc[]): Pick<StoriesState, 'stories' | 'seeded'> {
+  const p = persisted as Partial<StoriesState> | undefined
+  const stories = p?.stories ? normalizeStoryDocs(p.stories) : legacy()
+  return { stories: p?.seeded ? stories : withExample(stories), seeded: true }
+}
+
 export const useStories = create<StoriesState>()(
   persist(
     (set) => ({
@@ -73,11 +83,7 @@ export const useStories = create<StoriesState>()(
     {
       name: 'pmtools-stories',
       version: 1,
-      merge: (persisted, current) => {
-        const p = persisted as Partial<StoriesState> | undefined
-        const stories = p?.stories ? normalizeStoryDocs(p.stories) : legacyStories()
-        return { ...current, stories: p?.seeded ? stories : withExample(stories), seeded: true }
-      },
+      merge: (persisted, current) => ({ ...current, ...loadStories(persisted, legacyStories) }),
     },
   ),
 )

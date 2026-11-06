@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
+  MAX_CRITERIA, article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
   storyHints, storyMarkdown, storySentence, type UserStory,
 } from './story'
-import { normalizeStoryDocs, storiesFromBacklogItems, useStories, withExample } from './store'
+import { loadStories, normalizeStoryDocs, storiesFromBacklogItems, useStories, withExample } from './store'
 import { pdfText } from '../pdf/exportStories'
 
 const good = (): UserStory => ({
@@ -145,5 +145,50 @@ describe('restoreExample', () => {
     const titles = useStories.getState().stories.map((s) => s.title)
     expect(titles.filter((t) => t.startsWith('Example')).length).toBe(1)
     expect(titles[titles.length - 1]).toMatch(/^Example/)
+  })
+})
+
+describe('loadStories', () => {
+  const mine = { ...good(), id: 'mine', title: 'Mine' }
+  const ids = (r: ReturnType<typeof loadStories>) => r.stories.map((s) => s.id)
+
+  it('starts a first-time visitor with just the example', () => {
+    expect(ids(loadStories(undefined, () => []))).toEqual(['example'])
+  })
+  it('moves stories from the old backlog version on a first visit, then adds the example', () => {
+    expect(ids(loadStories(undefined, () => [mine]))).toEqual(['mine', 'example'])
+  })
+  it('adds the example once to stories saved before it existed', () => {
+    const r = loadStories({ stories: [mine] }, () => [])
+    expect(ids(r)).toEqual(['mine', 'example'])
+    expect(r.seeded).toBe(true)
+  })
+  it('keeps a deleted example deleted', () => {
+    expect(ids(loadStories({ stories: [mine], seeded: true }, () => []))).toEqual(['mine'])
+    expect(ids(loadStories({ stories: [], seeded: true }, () => []))).toEqual([])
+  })
+  it('does not read old backlog stories once stories have been saved', () => {
+    expect(ids(loadStories({ stories: [], seeded: true }, () => [mine]))).toEqual([])
+  })
+  it('cleans saved data', () => {
+    const r = loadStories({ stories: [{ ...mine, points: 'big' }, 7], seeded: true }, () => [])
+    expect(r.stories).toHaveLength(1)
+    expect(r.stories[0].points).toBeNull()
+  })
+})
+
+describe('story edge cases', () => {
+  it('leaves empty sections out of the Markdown', () => {
+    const md = storyMarkdown('Bare', { ...emptyStory(), role: 'admin' })
+    expect(md).toBe('### Bare\n\nAs an admin, I want …, so that ….')
+  })
+  it('flags too many acceptance criteria as too big', () => {
+    const criteria = Array.from({ length: MAX_CRITERIA + 1 }, (_, i) => ({ given: `case ${i}`, when: 'I save', then: 'it is saved' }))
+    expect(hintsFor({ criteria })).toEqual(['small'])
+  })
+  it('caps imported estimates and ignores criteria lists past 20', () => {
+    const s = normalizeStory({ points: 500, criteria: Array.from({ length: 30 }, () => ({ then: 'x' })) })!
+    expect(s.points).toBe(100)
+    expect(s.criteria).toHaveLength(20)
   })
 })
