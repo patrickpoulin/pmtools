@@ -3,6 +3,7 @@ import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { METHODS } from './methods/registry'
 import { pageFor } from './routes'
 import { ThemeToggle } from './components/ThemeToggle'
+import { NavMenu } from './components/NavMenu'
 import { HomePage } from './pages/HomePage'
 import { BacklogPage } from './pages/BacklogPage'
 import { MethodPage } from './pages/MethodPage'
@@ -32,13 +33,14 @@ export function App() {
           </Link>
           <nav className="nav" aria-label="Main">
             <NavLink to="/backlog">Backlog</NavLink>
-            {METHODS.map((m) => (
-              <NavLink key={m.id} to={`/method/${m.id}`}>
-                {m.name}
-              </NavLink>
-            ))}
-            <NavLink to="/compare">Compare</NavLink>
-            <NavLink to="/stories">User stories</NavLink>
+            <NavMenu
+              label="Prioritization"
+              links={[
+                ...METHODS.map((m) => ({ to: `/method/${m.id}`, label: m.name })),
+                { to: '/compare', label: 'Compare methods' },
+              ]}
+            />
+            <NavMenu label="Planning" links={[{ to: '/stories', label: 'User stories' }]} />
           </nav>
           <ThemeToggle />
         </div>
