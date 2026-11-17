@@ -38,7 +38,7 @@ export function WeightedChart({ backlog, palette: p, interactive, onHover }: Cha
     <svg
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
-      role="img"
+      role={interactive ? 'group' : 'img'}
       aria-label={`Weighted scores, ranked, for ${rows.length} items`}
       style={{ display: 'block', ...font }}
     >
@@ -68,6 +68,7 @@ export function WeightedChart({ backlog, palette: p, interactive, onHover }: Cha
           <g
             key={r.item.id}
             tabIndex={interactive ? 0 : undefined}
+            role={interactive ? 'img' : undefined}
             aria-label={interactive ? `${i + 1}. ${r.item.title}: weighted score ${r.result}` : undefined}
             className={interactive ? 'rice-row' : undefined}
             onPointerEnter={interactive ? (e) => onHover?.({ item: r.item, x: e.clientX, y: e.clientY }) : undefined}

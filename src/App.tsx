@@ -35,15 +35,15 @@ export function App() {
             <NavMenu
               label="Prioritization"
               sections={[
-                { heading: '1. Start here', links: [{ to: '/backlog', label: 'Backlog' }] },
+                { heading: '1. Start Here', links: [{ to: '/backlog', label: 'Backlog' }] },
                 {
-                  heading: '2. Score it',
+                  heading: '2. Score It',
                   links: METHODS.map((m) => ({ to: `/method/${m.id}`, label: m.name })),
                 },
-                { heading: '3. Decide', links: [{ to: '/compare', label: 'Compare methods' }] },
+                { heading: '3. Decide', links: [{ to: '/compare', label: 'Compare Methods' }] },
               ]}
             />
-            <NavMenu label="Planning" sections={[{ links: [{ to: '/stories', label: 'User stories' }] }]} />
+            <NavMenu label="Planning" sections={[{ links: [{ to: '/stories', label: 'User Stories' }] }]} />
           </nav>
           <ThemeToggle />
         </div>

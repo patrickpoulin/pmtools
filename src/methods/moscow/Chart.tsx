@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import type { ChartPalette, ChartProps } from '../types'
 import { scoresFor } from '../types'
 import {
@@ -58,9 +58,20 @@ export function MoscowChart({ backlog, palette: p, interactive, onScore, onHover
   }
 
   // Left/right moves through Must → Won't; an unsorted item enters at Must.
+  // A card moved with the keyboard is re-rendered in another column, so put focus back on it.
+  const refocus = useRef<string | null>(null)
+  useEffect(() => {
+    const id = refocus.current
+    if (!id) return
+    refocus.current = null
+    const card = [...(svgRef.current?.querySelectorAll<SVGGElement>('[data-item]') ?? [])].find((el) => el.dataset.item === id)
+    card?.focus()
+  })
+
   const onKey = (id: string, current: number) => (e: KeyboardEvent) => {
     if (!onScore || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
     e.preventDefault()
+    refocus.current = id
     const order = [MUST, SHOULD, COULD, WONT]
     const i = order.indexOf(current)
     const next = i < 0 ? 0 : Math.min(order.length - 1, Math.max(0, i + (e.key === 'ArrowRight' ? 1 : -1)))
@@ -87,7 +98,7 @@ export function MoscowChart({ backlog, palette: p, interactive, onScore, onHover
       ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
-      role="img"
+      role={interactive ? 'group' : 'img'}
       aria-label={`MoSCoW board with ${items.length} items`}
       style={{ display: 'block', userSelect: 'none', touchAction: drag ? 'none' : 'auto', ...font }}
       onPointerMove={
@@ -128,6 +139,7 @@ export function MoscowChart({ backlog, palette: p, interactive, onScore, onHover
               return (
                 <g
                   key={item.id}
+                  data-item={item.id}
                   transform={dragging ? `translate(${dx} ${dy})` : undefined}
                   tabIndex={interactive ? 0 : undefined}
                   role={interactive ? 'button' : undefined}

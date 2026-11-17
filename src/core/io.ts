@@ -16,13 +16,16 @@ const num = (v: unknown) => {
 
 const positive = (n: number | undefined) => (n !== undefined && n > 0 ? n : null)
 
+/** Backlog size limits, applied on import; the backlog editor uses the same ones. */
+export const ITEM_LIMITS = { items: 500, title: 200, description: 2000, tags: 20 }
+
 /** Coerce untrusted JSON (file upload, share link) into a valid Backlog. */
 export function normalizeBacklog(raw: unknown): Backlog {
   if (!raw || typeof raw !== 'object') throw new Error('Not a backlog file.')
   const r = raw as Record<string, any>
   if (!Array.isArray(r.items)) throw new Error('Backlog has no "items" list.')
   const base = emptyBacklog()
-  const items: Item[] = r.items.slice(0, 500).map((it: any) => {
+  const items: Item[] = r.items.slice(0, ITEM_LIMITS.items).map((it: any) => {
     const scores: Item['scores'] = {}
     for (const m of METHOD_IDS) {
       const src = it?.scores?.[m]
@@ -37,9 +40,9 @@ export function normalizeBacklog(raw: unknown): Backlog {
     }
     return {
       id: str(it?.id) || newId(),
-      title: str(it?.title, 'Untitled').slice(0, 200),
-      description: str(it?.description).slice(0, 2000),
-      tags: Array.isArray(it?.tags) ? it.tags.filter((t: unknown) => typeof t === 'string').slice(0, 20) : [],
+      title: str(it?.title, 'Untitled').slice(0, ITEM_LIMITS.title),
+      description: str(it?.description).slice(0, ITEM_LIMITS.description),
+      tags: Array.isArray(it?.tags) ? it.tags.filter((t: unknown) => typeof t === 'string').slice(0, ITEM_LIMITS.tags) : [],
       scores,
     }
   })

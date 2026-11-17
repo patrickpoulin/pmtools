@@ -90,7 +90,7 @@ export function ImpactEffortChart({ backlog, palette: p, interactive, onScore, o
       ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
-      role="img"
+      role={interactive ? 'group' : 'img'}
       aria-label={`Impact vs Effort matrix with ${backlog.items.length} items`}
       style={{ display: 'block', touchAction: dragId ? 'none' : 'auto', userSelect: 'none', ...font }}
       onPointerMove={interactive ? onMove : undefined}
