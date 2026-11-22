@@ -6,7 +6,7 @@ import { backlogToCsv, csvToItems, decodeShare, encodeShare, normalizeBacklog } 
 import { sampleBacklog } from '../core/sample'
 import { legacyHashTarget, pageFor } from '../routes'
 import { fillSampleScores } from '../core/store'
-import { pdfSafe } from '../pdf/text'
+import { pdfText } from '../pdf/common'
 import {
   defaultCriteria, effectiveScore, normalizeCriteria, rankWeighted, weightedScore,
 } from './weighted/scoring'
@@ -237,12 +237,12 @@ describe('untrusted imports', () => {
   })
 })
 
-describe('pdfSafe', () => {
+describe('pdfText', () => {
   it('keeps WinAnsi text, spells out symbols, strips accents it lacks and drops emoji', () => {
-    expect(pdfSafe('Café • 50% — “ok” …')).toBe('Café • 50% — "ok" …')
-    expect(pdfSafe('Effort ≤ 3 → ship ✓')).toBe('Effort <= 3 -> ship v')
-    expect(pdfSafe('Łódź Győr')).toBe('Lódz Gyor')
-    expect(pdfSafe('Launch 🚀 now\nnext\tstep')).toBe('Launch  now\nnext step')
-    expect(pdfSafe('Дорога 1')).toBe('?????? 1')
+    expect(pdfText('Café • 50% — “ok” …')).toBe('Café • 50% — “ok” …')
+    expect(pdfText('Effort ≤ 3 → ship ✓')).toBe('Effort <= 3 -> ship v')
+    expect(pdfText('Łódź Győr')).toBe('Lódz Gyor')
+    expect(pdfText('Launch 🚀 now\nnext\tstep')).toBe('Launch  now\nnext step')
+    expect(pdfText('Дорога 1')).toBe('?????? 1')
   })
 })

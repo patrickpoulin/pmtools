@@ -8,16 +8,7 @@ import { slugify } from '../core/io'
 import type { MethodDef } from '../methods/types'
 import { fieldsFor } from '../methods/types'
 import { PRINT_PALETTE } from '../methods/registry'
-import { pdfSafe as safe } from './text'
-
-const REPO = 'github.com/patrickpoulin/pmtools'
-const PAGE_W = 612
-const PAGE_H = 792
-const MX = 48
-const CONTENT_W = PAGE_W - MX * 2
-const INK: [number, number, number] = [11, 11, 11]
-const INK2: [number, number, number] = [82, 81, 78]
-const ACCENT: [number, number, number] = [42, 120, 214]
+import { ACCENT, CONTENT_W, INK, INK2, MX, PAGE_H, PAGE_W, drawFooter, lastTableY, pdfText as safe } from './common'
 
 function formatValue(fields: FieldDef[], key: string, v: number) {
   const f = fields.find((x) => x.key === key)
@@ -115,16 +106,22 @@ export async function exportMethodPdf(method: MethodDef, backlog: Backlog) {
 
   const section = (title: string, lines: string[]) => {
     const body = lines.flatMap((l) => doc.setFontSize(9.5).splitTextToSize(safe(l), CONTENT_W) as string[])
-    const needed = 18 + body.length * 13
-    if (y + needed > PAGE_H - 56) {
+    // Keep the title with its first few lines; after that, long sections continue on the next page.
+    if (y + 18 + Math.min(body.length, 3) * 13 > PAGE_H - 56) {
       doc.addPage()
       y = 56
     }
     doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...INK).text(safe(title), MX, y)
     y += 16
-    doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...INK2)
-    doc.text(body, MX, y, { lineHeightFactor: 1.35 })
-    y += body.length * 13 + 14
+    for (const line of body) {
+      if (y + 13 > PAGE_H - 56) {
+        doc.addPage()
+        y = 56
+      }
+      doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...INK2).text(line, MX, y)
+      y += 13
+    }
+    y += 14
   }
 
   if (method.summary) {
@@ -156,23 +153,13 @@ export async function exportMethodPdf(method: MethodDef, backlog: Backlog) {
       if (showResult && data.column.index === fields.length + 2) data.cell.styles.fontStyle = 'bold'
     },
   })
-  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24
+  y = lastTableY(doc) + 24
 
   const notes = backlog.notes[method.id]?.trim()
-  if (notes) section('Decision notes', notes.split('\n'))
+  if (notes) section('Decision Notes', notes.split('\n'))
   section(`About ${method.name}`, [method.about.summary, '', ...method.reference.map((r) => `•  ${r}`)])
 
-  // Footer on every page
-  const pages = doc.getNumberOfPages()
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i)
-    doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(137, 135, 129)
-    // Author attribution: required by the AGPL additional terms in NOTICE.
-    const credit = 'Made with PM Tools by Patrick Poulin  ·  '
-    doc.text(credit, MX, PAGE_H - 28)
-    doc.textWithLink(REPO, MX + doc.getTextWidth(credit), PAGE_H - 28, { url: `https://${REPO}` })
-    doc.text(`Page ${i} of ${pages}`, PAGE_W - MX, PAGE_H - 28, { align: 'right' })
-  }
+  drawFooter(doc)
 
   doc.save(`${slugify(backlog.name)}-${method.id}-${date.toISOString().slice(0, 10)}.pdf`)
 }

@@ -1,5 +1,4 @@
 import type { Backlog } from './types'
-import type { UserStory } from '../stories/story'
 import { defaultCriteria } from '../methods/weighted/scoring'
 
 export function emptyBacklog(): Backlog {
@@ -33,35 +32,6 @@ const rows: Row[] = [
   ['Audit log export', 'Required by two prospects in security review.', ['enterprise', 'security'], 4, 2, 300, 2, 80, 0.5, 3, [2, 4, 4, 1, 1]],
 ]
 
-/** Example stories for a few sample items, showing a finished story and one still in progress. */
-const SAMPLE_STORIES: Record<string, UserStory> = {
-  'sample-2': {
-    role: 'new workspace admin',
-    want: 'a short checklist of setup steps after I sign up',
-    benefit: 'I can get my team to their first useful report without booking a call with support',
-    criteria: [
-      { given: 'I have just created a workspace', when: 'I land on the home page', then: 'I see a checklist of 4 setup steps with none completed' },
-      { given: 'the checklist is showing', when: 'I connect a data source', then: 'that step is marked done without reloading the page' },
-      { given: 'I have completed every step', when: 'I return to the home page', then: 'the checklist is replaced by a link to my first report' },
-    ],
-    points: 5,
-    invest: { independent: true, negotiable: true, valuable: true, estimable: true, small: true, testable: true },
-    notes: 'Out of scope: in-app video tours. Design to confirm the step order with the activation data.',
-  },
-  'sample-4': {
-    role: 'team lead moving off spreadsheets',
-    want: 'to upload a CSV of our existing records and map its columns',
-    benefit: 'we can switch over in one afternoon instead of retyping everything',
-    criteria: [
-      { given: 'a CSV under 10 MB', when: 'I upload it', then: 'I see a preview of the first 20 rows' },
-      { given: 'a column whose name matches a field', when: 'the preview loads', then: 'it is mapped to that field automatically' },
-    ],
-    points: 8,
-    invest: { valuable: true, testable: true },
-    notes: '',
-  },
-}
-
 export function sampleBacklog(): Backlog {
   return {
     ...emptyBacklog(),
@@ -81,7 +51,6 @@ export function sampleBacklog(): Backlog {
         moscow: { category, effort },
         weighted: { value, strategy, revenue, effort: wEffort, risk },
       },
-      ...(SAMPLE_STORIES[`sample-${i + 1}`] ? { story: SAMPLE_STORIES[`sample-${i + 1}`] } : {}),
     })),
   }
 }

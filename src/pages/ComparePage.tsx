@@ -27,7 +27,7 @@ export function ComparePage() {
       <div className="page-head">
         <div>
           <div className="eyebrow">Cross-check</div>
-          <h1>Compare methods</h1>
+          <h1>Compare Methods</h1>
           <p className="muted" style={{ margin: 0 }}>
             Items are ordered by average rank. A large rank gap means the methods disagree, so that item is worth discussing.
           </p>

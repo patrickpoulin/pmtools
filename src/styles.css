@@ -128,6 +128,37 @@ p { margin: 0 0 1em; }
 .nav a:hover { background: var(--surface-2); color: var(--text-primary); }
 .nav a.active { color: var(--accent-ink); background: var(--accent-soft); font-weight: 600; }
 
+/* Nav dropdowns (NavMenu) */
+.nav-menu { position: relative; }
+.nav-menu-button {
+  display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 0.92rem; cursor: pointer;
+  color: var(--text-secondary); background: none; border: 0; padding: 6px 10px; border-radius: 6px;
+}
+.nav-menu-button:hover, .nav-menu-button[aria-expanded="true"] { background: var(--surface-2); color: var(--text-primary); }
+.nav-menu-button.active { color: var(--accent-ink); font-weight: 600; }
+.nav-menu-button svg { transition: transform 0.15s; }
+.nav-menu-button[aria-expanded="true"] svg { transform: rotate(180deg); }
+.nav-menu-list {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; min-width: 200px; max-width: calc(100vw - 32px);
+  list-style: none; margin: 0; padding: 6px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+.nav-menu-list[hidden] { display: none; }
+.nav-menu-list a { display: block; padding: 8px 10px; }
+.nav-menu-list ul { list-style: none; margin: 0; padding: 0; }
+.nav-menu-section + .nav-menu-section { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 6px; }
+.nav-menu-heading {
+  display: block; padding: 4px 10px 2px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+@media (prefers-reduced-motion: reduce) { .nav-menu-button svg { transition: none; } }
+/* Small screens: brand and theme toggle on one row, the nav on its own full-width row below. */
+@media (max-width: 640px) {
+  .site-header .container { gap: 0 12px; padding-top: 8px; padding-bottom: 6px; }
+  .brand { margin-right: auto; }
+  .nav { order: 3; flex-basis: 100%; margin: 4px -10px 0; }
+}
+
 main.container { padding-top: 40px; padding-bottom: 64px; }
 .site-footer { border-top: 1px solid var(--border); padding: 24px 0; color: var(--text-muted); font-size: 0.85rem; }
 
@@ -247,13 +278,13 @@ details.about ul { padding-left: 1.2em; margin: 6px 0 12px; }
 .story-list h2 { padding: 0 8px; }
 .story-list ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 @media (max-width: 900px) { .story-list ol { max-height: 240px; overflow-y: auto; } }
-.story-list button {
+.story-list ol button {
   display: flex; gap: 8px; align-items: flex-start; width: 100%; text-align: left; font: inherit; font-size: 0.9rem;
   color: var(--text-primary); background: transparent; border: 0; border-radius: 6px; padding: 6px 8px; cursor: pointer;
 }
-.story-list button:hover { background: var(--surface-2); }
-.story-list button.active { background: var(--accent-soft); }
-.story-list button:focus-visible { outline: 2px solid var(--accent); }
+.story-list ol button:hover { background: var(--surface-2); }
+.story-list ol button.active { background: var(--accent-soft); }
+.story-list ol button:focus-visible { outline: 2px solid var(--accent); }
 .story-list .dot-num { flex: none; margin-top: 1px; }
 .story-list-title { display: flex; flex-direction: column; min-width: 0; }
 .story-parts { display: grid; gap: 16px; }
@@ -292,3 +323,19 @@ details.about ul { padding-left: 1.2em; margin: 6px 0 12px; }
 .invest-status { font-weight: 700; color: var(--text-muted); }
 .invest-ok .invest-status { color: var(--accent-ink); }
 .invest-warn .invest-status { color: var(--danger); }
+.story-guide-link {
+  display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; font: inherit; font-size: 0.9rem; font-weight: 600;
+  color: var(--text-primary); background: transparent; border: 0; border-radius: 6px; padding: 8px; cursor: pointer;
+  margin-bottom: 12px;
+}
+.story-guide-link span {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 12px;
+  background: var(--surface-2); color: var(--accent-ink);
+}
+.story-guide-link:hover { background: var(--surface-2); }
+.story-guide-link.active { background: var(--accent-soft); color: var(--accent-ink); }
+.story-guide-link:focus-visible { outline: 2px solid var(--accent); }
+.story-list-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 8px 0; border-top: 1px solid var(--border); margin-bottom: 8px; }
+.story-list-head h2 { margin: 0; padding: 0; }
+.story-list-head .btn { padding: 4px 10px; }
+.story-example-btn { margin-top: 8px; width: 100%; justify-content: flex-start; white-space: normal; text-align: left; font-size: 0.85rem; color: var(--accent-ink); }

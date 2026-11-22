@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  article, cleanPart, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
+  LIMITS, MAX_CRITERIA, article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
   storyHints, storyMarkdown, storySentence, type UserStory,
 } from './story'
-import { normalizeBacklog } from '../core/io'
-import { sampleBacklog } from '../core/sample'
-import { fillSampleScores } from '../core/store'
+import { loadStories, normalizeStoryDocs, storiesFromBacklogItems, useStories, withExample } from './store'
+import { pdfText } from '../pdf/common'
 
 const good = (): UserStory => ({
   role: 'finance approver',
@@ -30,6 +29,9 @@ describe('story text', () => {
       'As an admin, I want to export, so that I can audit.',
     )
     expect(['user', 'unit lead', 'urban planner', 'operator'].map(article)).toEqual(['a', 'a', 'an', 'an'])
+    expect(['UX designer', 'UI lead', 'European buyer', 'one-time donor', 'upset customer', 'Uber driver'].map(article)).toEqual(
+      ['a', 'a', 'a', 'a', 'an', 'a'],
+    )
     expect(storySentence({ role: 'As a buyer', want: '', benefit: '' })).toBe('As a buyer, I want …, so that ….')
   })
   it('writes Given/When/Then, skipping empty parts', () => {
@@ -89,29 +91,116 @@ describe('investStatus', () => {
 
 describe('saved stories', () => {
   it('normalizes untrusted input', () => {
-    const s = normalizeStory({ role: 5, want: 'x'.repeat(900), criteria: [{ given: 1, then: 'ok' }], points: -2, invest: { small: 'yes', valuable: true, bogus: true } })!
+    const s = normalizeStory({ role: 5, want: 'x'.repeat(LIMITS.text + 100), criteria: [{ given: 1, then: 'ok' }], points: -2, invest: { small: 'yes', valuable: true, bogus: true } })!
     expect(s.role).toBe('')
-    expect(s.want).toHaveLength(500)
+    expect(s.want).toHaveLength(LIMITS.text)
     expect(s.criteria).toEqual([{ given: '', when: '', then: 'ok' }])
     expect(s.points).toBeNull()
     expect(s.invest).toEqual({ valuable: true })
-    expect(normalizeStory(undefined)).toBeUndefined()
+    expect(normalizeStory(undefined)).toBeNull()
     expect(normalizeStory('nope')).toBeNull()
   })
-  it('round-trips through a backlog file, keeping cleared stories cleared', () => {
-    const b = sampleBacklog()
-    b.items[0].story = null
-    const back = normalizeBacklog(JSON.parse(JSON.stringify(b)))
-    expect(back.items[1].story).toEqual(b.items[1].story)
-    expect(back.items[0].story).toBeNull()
-    expect('story' in back.items[2]).toBe(false)
+  it('keeps saved stories, giving duplicate or missing ids new ones', () => {
+    const docs = normalizeStoryDocs([{ ...good(), id: 'a', title: 'One' }, { ...good(), id: 'a', title: 'Two' }, 'junk', { ...good() }])
+    expect(docs.map((d) => d.title)).toEqual(['One', 'Two', 'Untitled story'])
+    expect(new Set(docs.map((d) => d.id)).size).toBe(3)
+    expect(docs[0].id).toBe('a')
+    expect(normalizeStoryDocs('nope')).toEqual([])
   })
-  it('backfills sample stories for backlogs saved before stories, but not over a cleared one', () => {
-    const b = sampleBacklog()
-    for (const it of b.items) delete it.story
-    b.items[3].story = null
-    const filled = fillSampleScores(b)
-    expect(filled.items[1].story?.role).toBe('new workspace admin')
-    expect(filled.items[3].story).toBeNull()
+  it('brings over stories written on backlog items, but not the sample examples', () => {
+    const moved = storiesFromBacklogItems([
+      { id: 'sample-2', title: 'Onboarding checklist', story: good() },
+      { id: 'x1', title: 'Approvals', story: good() },
+      { id: 'x2', title: 'Cleared', story: null },
+      { id: 'x3', title: 'Empty', story: emptyStory() },
+      { id: 'x4', title: 'No story' },
+    ])
+    expect(moved.map((m) => m.title)).toEqual(['Approvals'])
+    expect(moved[0].role).toBe('finance approver')
+    expect(storiesFromBacklogItems(undefined)).toEqual([])
+  })
+  it('has an example that passes every check', () => {
+    const ex = exampleStory()
+    expect(storyHints(ex)).toEqual([])
+    expect(readyCount(ex)).toBe(6)
+  })
+})
+
+describe('example and PDF text', () => {
+  it('adds the example after the user’s own stories', () => {
+    const list = withExample([{ ...good(), id: 'mine', title: 'Mine' }])
+    expect(list.map((s) => s.id)).toEqual(['mine', 'example'])
+    expect(list[1].title).toMatch(/^Example/)
+  })
+  it('keeps PDF text inside WinAnsi', () => {
+    expect(pdfText('As a café owner → “fast” ✓')).toBe('As a café owner -> “fast” v')
+    expect(pdfText('Łódź 東京 🚀 ok')).toBe('Lódz ??  ok')
+  })
+})
+
+describe('restoreExample', () => {
+  it('brings back a deleted example once, at the end of the list', () => {
+    const { addStory, removeStory, restoreExample } = useStories.getState()
+    removeStory('example')
+    addStory({ title: 'Mine' })
+    restoreExample()
+    restoreExample()
+    const titles = useStories.getState().stories.map((s) => s.title)
+    expect(titles.filter((t) => t.startsWith('Example')).length).toBe(1)
+    expect(titles[titles.length - 1]).toMatch(/^Example/)
+  })
+})
+
+describe('loadStories', () => {
+  const mine = { ...good(), id: 'mine', title: 'Mine' }
+  const ids = (r: ReturnType<typeof loadStories>) => r.stories.map((s) => s.id)
+
+  it('starts a first-time visitor with just the example', () => {
+    expect(ids(loadStories(undefined, () => []))).toEqual(['example'])
+  })
+  it('moves stories from the old backlog version on a first visit, then adds the example', () => {
+    expect(ids(loadStories(undefined, () => [mine]))).toEqual(['mine', 'example'])
+  })
+  it('adds the example once to stories saved before it existed', () => {
+    const r = loadStories({ stories: [mine] }, () => [])
+    expect(ids(r)).toEqual(['mine', 'example'])
+    expect(r.seeded).toBe(true)
+  })
+  it('keeps a deleted example deleted', () => {
+    expect(ids(loadStories({ stories: [mine], seeded: true }, () => []))).toEqual(['mine'])
+    expect(ids(loadStories({ stories: [], seeded: true }, () => []))).toEqual([])
+  })
+  it('does not read old backlog stories once stories have been saved', () => {
+    expect(ids(loadStories({ stories: [], seeded: true }, () => [mine]))).toEqual([])
+  })
+  it('cleans saved data', () => {
+    const r = loadStories({ stories: [{ ...mine, points: 'big' }, 7], seeded: true }, () => [])
+    expect(r.stories).toHaveLength(1)
+    expect(r.stories[0].points).toBeNull()
+  })
+})
+
+describe('story edge cases', () => {
+  it('leaves empty sections out of the Markdown', () => {
+    const md = storyMarkdown('Bare', { ...emptyStory(), role: 'admin' })
+    expect(md).toBe('### Bare\n\nAs an admin, I want …, so that ….')
+  })
+  it('flags too many acceptance criteria as too big', () => {
+    const criteria = Array.from({ length: MAX_CRITERIA + 1 }, (_, i) => ({ given: `case ${i}`, when: 'I save', then: 'it is saved' }))
+    expect(hintsFor({ criteria })).toEqual(['small'])
+  })
+  it('caps imported estimates and criteria at the editor limits', () => {
+    const s = normalizeStory({ points: 500, criteria: Array.from({ length: LIMITS.criteria + 5 }, () => ({ then: 'x' })) })!
+    expect(s.points).toBe(100)
+    expect(s.criteria).toHaveLength(LIMITS.criteria)
+  })
+  it('keeps text up to the editor limits when loading, so nothing typed is lost', () => {
+    const long = { role: 'r'.repeat(LIMITS.role), want: 'w'.repeat(LIMITS.text), notes: 'n'.repeat(LIMITS.notes) }
+    const s = normalizeStory(long)!
+    expect([s.role.length, s.want.length, s.notes.length]).toEqual([LIMITS.role, LIMITS.text, LIMITS.notes])
+  })
+  it('gives stories moved from backlog items stable ids', () => {
+    const items = [{ id: 'x1', title: 'Approvals', story: good() }]
+    expect(storiesFromBacklogItems(items)[0].id).toBe(storiesFromBacklogItems(items)[0].id)
   })
 })

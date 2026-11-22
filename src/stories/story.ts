@@ -1,6 +1,6 @@
 /**
  * User stories: the "As a / I want / so that" sentence, acceptance criteria and an INVEST check.
- * A story belongs to a backlog item (item.story), so it travels with JSON files and share links.
+ * Stories are written from scratch, separate from the prioritization backlog, and saved in their own list.
  */
 
 /** One acceptance criterion in Given / When / Then form. Any part may be empty. */
@@ -24,7 +24,15 @@ export interface UserStory {
   notes: string
 }
 
+/** A saved story with a short name for the list. */
+export interface StoryDoc extends UserStory {
+  id: string
+  title: string
+}
+
 export const POINTS = [1, 2, 3, 5, 8, 13, 20]
+/** Size limits. The editor enforces the same ones, so loading saved data never cuts anything a user typed. */
+export const LIMITS = { title: 200, role: 500, text: 2000, notes: 10000, criteria: 100, stories: 1000 }
 /** Above this, most teams split the story before a sprint. */
 export const MAX_SPRINT_POINTS = 8
 /** More criteria than this usually means more than one story. */
@@ -63,8 +71,12 @@ export function cleanPart(part: keyof typeof PREFIX, text: string): string {
   return text.replace(PREFIX[part], '').trim().replace(/[.\s]+$/, '')
 }
 
-/** "a" or "an" for a role by how it usually sounds: an admin, an editor, but a user, a unit lead. */
-export const article = (role: string) => (/^(?:[aeio]|u(?!s[aeiou]|ni|ti|ri|k))/i.test(role) ? 'an' : 'a')
+/** "a" or "an" for a role by how it usually sounds: an admin, an editor, but a user, a UX designer. */
+export function article(role: string): 'a' | 'an' {
+  // Vowel letters that sound like "you" or "won": a user, a UX designer, a unicorn, a European, a one-off.
+  if (/^(?:eu|one\b|u(?:[bcfhjkmpqrstvwxyz][aeiou]|ni|x|i\b|s\b))/i.test(role)) return 'a'
+  return /^[aeiou]/i.test(role) ? 'an' : 'a'
+}
 
 /** The story sentence, e.g. "As an admin, I want to export reports, so that I can audit usage." */
 export function storySentence(s: Pick<UserStory, 'role' | 'want' | 'benefit'>): string {
@@ -163,35 +175,47 @@ export const readyCount = (s: UserStory) => Object.values(investStatus(s)).filte
 export function storyMarkdown(title: string, s: UserStory): string {
   const lines = [`### ${title}`, '', storySentence(s)]
   const criteria = s.criteria.map(criterionText).filter(Boolean)
-  if (criteria.length) lines.push('', '**Acceptance criteria**', '', ...criteria.map((c) => `- [ ] ${c}`))
+  if (criteria.length) lines.push('', '**Acceptance Criteria**', '', ...criteria.map((c) => `- [ ] ${c}`))
   if (s.points !== null) lines.push('', `**Estimate:** ${s.points} ${s.points === 1 ? 'point' : 'points'}`)
   if (s.notes.trim()) lines.push('', '**Notes**', '', s.notes.trim())
   return lines.join('\n')
 }
 
-const text = (v: unknown, max = 500) => (typeof v === 'string' ? v.slice(0, max) : '')
+const text = (v: unknown, max = LIMITS.text) => (typeof v === 'string' ? v.slice(0, max) : '')
 
-/**
- * Coerce untrusted JSON (file, share link) into a story. Returns null for "no story" and undefined
- * when the field is absent, so the sample backfill can tell an item never had one from one cleared.
- */
-export function normalizeStory(raw: unknown): UserStory | null | undefined {
-  if (raw === undefined) return undefined
+/** Coerce untrusted JSON (saved data from an older version, a file) into a story, or null if it isn't one. */
+export function normalizeStory(raw: unknown): UserStory | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, any>
   const criteria = Array.isArray(r.criteria)
-    ? r.criteria.slice(0, 20).map((c: any) => ({ given: text(c?.given), when: text(c?.when), then: text(c?.then) }))
+    ? r.criteria.slice(0, LIMITS.criteria).map((c: any) => ({ given: text(c?.given), when: text(c?.when), then: text(c?.then) }))
     : []
   const points = typeof r.points === 'number' && Number.isFinite(r.points) && r.points > 0 ? Math.min(r.points, 100) : null
   const invest: UserStory['invest'] = {}
   for (const { key } of INVEST) if (r.invest?.[key] === true) invest[key] = true
   return {
-    role: text(r.role, 200),
+    role: text(r.role, LIMITS.role),
     want: text(r.want),
     benefit: text(r.benefit),
     criteria: criteria.length ? criteria : [emptyCriterion()],
     points,
     invest,
-    notes: text(r.notes, 2000),
+    notes: text(r.notes, LIMITS.notes),
   }
 }
+
+/** A finished example, to show what a good story looks like. */
+export const exampleStory = (): Omit<StoryDoc, 'id'> => ({
+  title: 'Example: Onboarding checklist',
+  role: 'new workspace admin',
+  want: 'a short checklist of setup steps after I sign up',
+  benefit: 'I can get my team to their first useful report without booking a call with support',
+  criteria: [
+    { given: 'I have just created a workspace', when: 'I land on the home page', then: 'I see a checklist of 4 setup steps with none completed' },
+    { given: 'the checklist is showing', when: 'I connect a data source', then: 'that step is marked done without reloading the page' },
+    { given: 'I have completed every step', when: 'I return to the home page', then: 'the checklist is replaced by a link to my first report' },
+  ],
+  points: 5,
+  invest: { independent: true, negotiable: true, valuable: true, estimable: true, small: true, testable: true },
+  notes: 'Out of scope: in-app video tours.',
+})

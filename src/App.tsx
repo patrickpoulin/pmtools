@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import { METHODS } from './methods/registry'
 import { pageFor } from './routes'
 import { ThemeToggle } from './components/ThemeToggle'
+import { NavMenu } from './components/NavMenu'
 import { HomePage } from './pages/HomePage'
 import { BacklogPage } from './pages/BacklogPage'
 import { MethodPage } from './pages/MethodPage'
@@ -31,14 +32,18 @@ export function App() {
             PM Tools
           </Link>
           <nav className="nav" aria-label="Main">
-            <NavLink to="/backlog">Backlog</NavLink>
-            {METHODS.map((m) => (
-              <NavLink key={m.id} to={`/method/${m.id}`}>
-                {m.name}
-              </NavLink>
-            ))}
-            <NavLink to="/compare">Compare</NavLink>
-            <NavLink to="/stories">User stories</NavLink>
+            <NavMenu
+              label="Prioritization"
+              sections={[
+                { heading: '1. Start Here', links: [{ to: '/backlog', label: 'Backlog' }] },
+                {
+                  heading: '2. Score It',
+                  links: METHODS.map((m) => ({ to: `/method/${m.id}`, label: m.name })),
+                },
+                { heading: '3. Decide', links: [{ to: '/compare', label: 'Compare Methods' }] },
+              ]}
+            />
+            <NavMenu label="Planning" sections={[{ links: [{ to: '/stories', label: 'User Stories' }] }]} />
           </nav>
           <ThemeToggle />
         </div>

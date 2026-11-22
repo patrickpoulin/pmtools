@@ -3,7 +3,6 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 import type { Backlog, Criterion, FieldDef, Item, MethodId, MethodScores } from './types'
 import { emptyBacklog } from './sample'
 import { newId } from './store'
-import { normalizeStory } from '../stories/story'
 import { fitToField } from '../methods/types'
 import { IE_FIELDS } from '../methods/impact-effort/scoring'
 import { RICE_FIELDS } from '../methods/rice/scoring'
@@ -19,6 +18,9 @@ const num = (v: unknown) => {
 }
 
 const positive = (n: number | undefined) => (n !== undefined && n > 0 ? n : null)
+
+/** Backlog size limits, applied on import; the backlog editor uses the same ones. */
+export const ITEM_LIMITS = { items: 500, title: 200, description: 2000, tags: 20 }
 
 /** Fields with a fixed range. Weighted Scoring keys are criterion ids, all on the same 1–5 scale. */
 const FIXED_FIELDS: Record<Exclude<MethodId, 'weighted'>, FieldDef[]> = {
@@ -40,12 +42,6 @@ function cleanScore(m: MethodId, key: string, v: number | undefined): number | u
 const divider = (n: number | undefined, fallback: number) =>
   n === undefined ? fallback : Math.min(9.5, Math.max(1.5, Math.round(n * 2) / 2))
 
-/** Only set when present, so files from before stories existed still get the sample's stories. */
-function storyField(raw: unknown): Pick<Item, 'story'> {
-  const story = normalizeStory(raw)
-  return story === undefined ? {} : { story }
-}
-
 /** Coerce untrusted JSON (file upload, share link) into a valid Backlog. */
 export function normalizeBacklog(raw: unknown): Backlog {
   if (!raw || typeof raw !== 'object') throw new Error('Not a backlog file.')
@@ -53,7 +49,7 @@ export function normalizeBacklog(raw: unknown): Backlog {
   if (!Array.isArray(r.items)) throw new Error('Backlog has no "items" list.')
   const base = emptyBacklog()
   const ids = new Set<string>()
-  const items: Item[] = r.items.slice(0, 500).map((it: any) => {
+  const items: Item[] = r.items.slice(0, ITEM_LIMITS.items).map((it: any) => {
     const scores: Item['scores'] = {}
     for (const m of METHOD_IDS) {
       const src = it?.scores?.[m]
@@ -72,11 +68,10 @@ export function normalizeBacklog(raw: unknown): Backlog {
     ids.add(id)
     return {
       id,
-      title: str(it?.title, 'Untitled').slice(0, 200),
-      description: str(it?.description).slice(0, 2000),
-      tags: Array.isArray(it?.tags) ? it.tags.filter((t: unknown) => typeof t === 'string').slice(0, 20) : [],
+      title: str(it?.title, 'Untitled').slice(0, ITEM_LIMITS.title),
+      description: str(it?.description).slice(0, ITEM_LIMITS.description),
+      tags: Array.isArray(it?.tags) ? it.tags.filter((t: unknown) => typeof t === 'string').slice(0, ITEM_LIMITS.tags) : [],
       scores,
-      ...storyField(it?.story),
     }
   })
   const ie = r.settings?.impactEffort ?? {}
