@@ -8,10 +8,7 @@ import { slugify } from '../core/io'
 import type { MethodDef } from '../methods/types'
 import { fieldsFor } from '../methods/types'
 import { PRINT_PALETTE } from '../methods/registry'
-import { ACCENT, CONTENT_W, INK, INK2, MX, PAGE_H, PAGE_W, drawFooter, lastTableY } from './common'
-
-/** jsPDF's built-in fonts are WinAnsi; swap the few characters outside it. */
-const safe = (s: string) => s.replace(/→/g, '->').replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+import { ACCENT, CONTENT_W, INK, INK2, MX, PAGE_H, PAGE_W, drawFooter, lastTableY, pdfText as safe } from './common'
 
 function formatValue(fields: FieldDef[], key: string, v: number) {
   const f = fields.find((x) => x.key === key)
@@ -26,6 +23,9 @@ async function drawChart(doc: jsPDF, method: MethodDef, backlog: Backlog, top: n
   )
   const svg = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement as unknown as SVGSVGElement
   inlineStylesAsAttributes(svg)
+  // Chart labels include item titles, which can hold characters the PDF font lacks.
+  const walker = document.createTreeWalker(svg, NodeFilter.SHOW_TEXT)
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) n.nodeValue = safe(n.nodeValue ?? '')
   const [, , vw, vh] = svg.getAttribute('viewBox')!.split(' ').map(Number)
   let w = CONTENT_W
   let h = (w * vh) / vw
@@ -136,11 +136,11 @@ export async function exportMethodPdf(method: MethodDef, backlog: Backlog) {
   autoTable(doc, {
     startY: y,
     margin: { left: MX, right: MX, bottom: 56 },
-    head: [['#', 'Item', ...fields.map((f) => f.label), ...(showResult ? [method.resultLabel] : [])]],
+    head: [['#', 'Item', ...fields.map((f) => f.label), ...(showResult ? [method.resultLabel] : [])].map(safe)],
     body: ranked.map((r, i) => [
       String(method.chartUsesItemNumbers ? order.get(r.item.id) : i + 1),
       safe(r.item.description ? `${r.item.title}\n${r.item.description}` : r.item.title),
-      ...fields.map((f) => formatValue(fields, f.key, r.values[f.key])),
+      ...fields.map((f) => safe(formatValue(fields, f.key, r.values[f.key]))),
       ...(showResult ? [safe(r.result)] : []),
     ]),
     styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 5, textColor: INK, lineColor: [225, 224, 217], lineWidth: 0.5 },

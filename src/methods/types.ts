@@ -85,3 +85,22 @@ export function scoresFor(item: Item, method: { id: MethodId; fields: FieldDef[]
   const s = item.scores[method.id] ?? {}
   return Object.fromEntries(method.fields.map((f) => [f.key, s[f.key] ?? f.defaultValue]))
 }
+
+/**
+ * Fit an untrusted value (file, share link, CSV) to what the field's input can show, or undefined to
+ * use the field default instead:
+ * - a select snaps to its nearest option (RICE confidence 90 -> 100), but a value outside the options'
+ *   range is dropped rather than guessed (MoSCoW category 9 is not a Must);
+ * - a number is clamped to its range, except a `blankAtZero` field drops zero or less (RICE effort 0
+ *   means "not estimated", not "almost free", which would put the item at the top).
+ */
+export function fitToField(field: FieldDef, v: number): number | undefined {
+  if (!Number.isFinite(v)) return undefined
+  if (field.kind === 'select') {
+    const values = (field.options ?? []).map((o) => o.value)
+    if (!values.length || v < Math.min(...values) || v > Math.max(...values)) return undefined
+    return values.reduce((best, o) => (Math.abs(o - v) < Math.abs(best - v) ? o : best))
+  }
+  if (field.blankAtZero && v <= 0) return undefined
+  return Math.min(field.max ?? Infinity, Math.max(field.min ?? -Infinity, v))
+}
