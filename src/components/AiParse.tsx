@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../core/store'
 import { ITEM_LIMITS } from '../core/io'
-import { AI_PROMPT, STORY_TAG, isDuplicate, parseAiReply } from '../core/aiParse'
+import { AI_PROMPT, STORY_TAG, draftStory, isDuplicate, parseAiReply, type StoryParts } from '../core/aiParse'
+import { useStories } from '../stories/store'
+import { LIMITS, storyForItem, storySentence } from '../stories/story'
 
 interface Row {
   key: number
@@ -11,6 +13,7 @@ interface Row {
   description: string
   isStory: boolean
   source: string
+  story?: StoryParts
   duplicate: boolean
 }
 
@@ -18,6 +21,7 @@ interface Row {
 export function AiParse() {
   const items = useStore((s) => s.backlog.items)
   const addItem = useStore((s) => s.addItem)
+  const { stories, addStory } = useStories()
   const [reply, setReply] = useState('')
   const [rows, setRows] = useState<Row[] | null>(null)
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null)
@@ -52,10 +56,26 @@ export function AiParse() {
     setRows((rs) => rs && rs.map((r) => (r.key === key ? { ...r, ...patch } : r)))
 
   const add = () => {
-    chosen.forEach((r) =>
-      addItem({ title: r.title.trim(), description: r.description.trim(), tags: r.isStory ? [STORY_TAG] : [] }),
-    )
-    setMsg({ text: `Added ${chosen.length} ${chosen.length === 1 ? 'item' : 'items'} to the backlog, unscored.` })
+    let drafted = 0
+    let skipped = 0
+    for (const r of chosen) {
+      addItem({ title: r.title.trim(), description: r.description.trim(), tags: r.isStory ? [STORY_TAG] : [] })
+      if (!r.isStory || storyForItem(r, stories)) continue
+      // Draft the story now, so the item's Write story button opens it filled in.
+      if (stories.length + drafted < LIMITS.stories) {
+        addStory(draftStory(r))
+        drafted++
+      } else skipped++
+    }
+    const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+    setMsg({
+      text:
+        `Added ${plural(chosen.length, 'item', 'items')} to the backlog, unscored` +
+        (drafted ? `, and drafted ${plural(drafted, 'user story', 'user stories')} (use Open story on the item to see it)` : '') +
+        '.' +
+        (skipped ? ` Your stories list is full, so ${plural(skipped, 'story was', 'stories were')} not drafted.` : ''),
+      error: skipped > 0,
+    })
     setRows(null)
     setReply('')
   }
@@ -101,8 +121,9 @@ export function AiParse() {
             <h3 style={{ margin: 0 }}>3. Review and Add</h3>
             <p className="small muted" style={{ margin: 0 }}>
               Untick anything you don't want and fix titles as needed. Items are added unscored, so you can score them
-              in any method. Items marked as user stories get the "{STORY_TAG}" tag and a Write story button that starts
-              them in the <Link to="/stories">user story writer</Link>.
+              in any method. Items marked as user stories get the "{STORY_TAG}" tag and a draft in
+              the <Link to="/stories">user story writer</Link> with what the AI found. Points and the INVEST check are
+              left to you.
             </p>
             <div className="table-wrap">
               <table>
@@ -129,6 +150,12 @@ export function AiParse() {
                           onChange={(e) => update(r.key, { title: e.target.value })}
                         />
                         {r.duplicate && <div className="small muted">Already in your backlog</div>}
+                        {r.isStory && r.story && (
+                          <div className="small muted">
+                            {storySentence(r.story)}
+                            {r.story.criteria.length > 0 && ` ${r.story.criteria.length} acceptance ${r.story.criteria.length === 1 ? 'criterion' : 'criteria'}.`}
+                          </div>
+                        )}
                         {r.source && (
                           <details className="about small">
                             <summary>Source</summary>
