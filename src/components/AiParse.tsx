@@ -101,8 +101,8 @@ export function AiParse() {
             <h3 style={{ margin: 0 }}>3. Review and Add</h3>
             <p className="small muted" style={{ margin: 0 }}>
               Untick anything you don't want and fix titles as needed. Items are added unscored, so you can score them
-              in any method. Items marked as user stories get the "{STORY_TAG}" tag, ready to write up in
-              the <Link to="/stories">user story writer</Link>.
+              in any method. Items marked as user stories get the "{STORY_TAG}" tag and a Write story button that starts
+              them in the <Link to="/stories">user story writer</Link>.
             </p>
             <div className="table-wrap">
               <table>

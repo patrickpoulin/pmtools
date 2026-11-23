@@ -1,14 +1,26 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../core/store'
 import { ITEM_LIMITS } from '../core/io'
 import { BacklogActions } from '../components/BacklogActions'
 import { BacklogResetActions } from '../components/BacklogResetActions'
 import { AiParse } from '../components/AiParse'
+import { useStories } from '../stories/store'
+import { LIMITS, isStoryItem, storyForItem, storyFromItem } from '../stories/story'
+import type { Item } from '../core/types'
 
 export function BacklogPage() {
   const backlog = useStore((s) => s.backlog)
   const { setMeta, addItem, updateItem, removeItem, moveItem } = useStore()
   const [title, setTitle] = useState('')
+  const { stories, addStory } = useStories()
+  const navigate = useNavigate()
+  // Opens the story already started from this item, or starts one, so a second click doesn't make a copy.
+  const writeStory = (item: Item) => {
+    const id = storyForItem(item, stories)?.id ?? addStory(storyFromItem(item))
+    navigate(`/stories?story=${encodeURIComponent(id)}`)
+  }
+  const storiesFull = stories.length >= LIMITS.stories
   // Imports keep at most this many items, so stop here rather than lose some on the next open.
   const full = backlog.items.length >= ITEM_LIMITS.items
 
@@ -69,6 +81,15 @@ export function BacklogPage() {
                     <TagsInput value={item.tags} onChange={(tags) => updateItem(item.id, { tags })} label={`Tags for item ${i + 1}`} />
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
+                    {isStoryItem(item) && (
+                      <button
+                        className="btn ghost icon small"
+                        disabled={!storyForItem(item, stories) && storiesFull}
+                        onClick={() => writeStory(item)}
+                      >
+                        {storyForItem(item, stories) ? 'Open story' : 'Write story'}
+                      </button>
+                    )}
                     <button className="btn ghost icon" aria-label="Move up" disabled={i === 0} onClick={() => moveItem(item.id, -1)}>↑</button>
                     <button className="btn ghost icon" aria-label="Move down" disabled={i === backlog.items.length - 1} onClick={() => moveItem(item.id, 1)}>↓</button>
                     <button className="btn ghost icon danger" aria-label={`Delete ${item.title}`} onClick={() => removeItem(item.id)}>✕</button>

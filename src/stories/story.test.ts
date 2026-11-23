@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   LIMITS, MAX_CRITERIA, article, cleanPart, exampleStory, criterionText, emptyStory, hasStory, investStatus, normalizeStory, readyCount, restatesWant,
-  storyHints, storyMarkdown, storySentence, type UserStory,
+  storyHints, storyMarkdown, storySentence, type UserStory, isStoryItem, storyForItem, storyFromItem,
 } from './story'
 import { loadStories, normalizeStoryDocs, storiesFromBacklogItems, useStories, withExample } from './store'
 import { pdfText } from '../pdf/common'
@@ -202,5 +202,22 @@ describe('story edge cases', () => {
   it('gives stories moved from backlog items stable ids', () => {
     const items = [{ id: 'x1', title: 'Approvals', story: good() }]
     expect(storiesFromBacklogItems(items)[0].id).toBe(storiesFromBacklogItems(items)[0].id)
+  })
+})
+
+describe('stories from backlog items', () => {
+  it('spots the story tag in any case', () => {
+    expect(isStoryItem({ tags: ['ux', ' Story '] })).toBe(true)
+    expect(isStoryItem({ tags: ['stories'] })).toBe(false)
+  })
+  it('starts a story with the title and keeps the description in the notes', () => {
+    expect(storyFromItem({ title: ' Export CSV ', description: 'Finance needs it.' })).toEqual({ title: 'Export CSV', notes: 'Finance needs it.' })
+    expect(storyFromItem({ title: ' ', description: '' }).title).toBe('Untitled story')
+    expect(storyFromItem({ title: 'x'.repeat(300), description: '' }).title).toHaveLength(LIMITS.title)
+  })
+  it('finds a story already started from the item', () => {
+    const stories = [{ id: 'a', title: 'Export  csv' }, { id: 'b', title: 'Other' }]
+    expect(storyForItem({ title: 'Export CSV' }, stories)?.id).toBe('a')
+    expect(storyForItem({ title: 'New' }, stories)).toBeUndefined()
   })
 })

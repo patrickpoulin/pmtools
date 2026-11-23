@@ -3,9 +3,9 @@
  * Nothing here calls an AI. The user chooses what to share and with which tool.
  */
 import { ITEM_LIMITS } from './io'
+import { STORY_TAG } from '../stories/story'
 
-/** Tag added to items the AI says read as a user need, so they are easy to find for the story writer. */
-export const STORY_TAG = 'story'
+export { STORY_TAG }
 
 export const AI_PROMPT = `You are helping a product manager turn requirements into a backlog for prioritization.
 

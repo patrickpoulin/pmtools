@@ -219,3 +219,22 @@ export const exampleStory = (): Omit<StoryDoc, 'id'> => ({
   invest: { independent: true, negotiable: true, valuable: true, estimable: true, small: true, testable: true },
   notes: 'Out of scope: in-app video tours.',
 })
+
+/** Tag that marks a backlog item as a user need, set by Parse with AI or by hand. */
+export const STORY_TAG = 'story'
+
+export const isStoryItem = (item: { tags: string[] }) => item.tags.some((t) => t.trim().toLowerCase() === STORY_TAG)
+
+/** A new story started from a backlog item: its title, with the description kept in the notes to write from. */
+export function storyFromItem(item: { title: string; description: string }): Partial<StoryDoc> {
+  return {
+    title: item.title.trim().slice(0, LIMITS.title) || 'Untitled story',
+    notes: item.description.trim().slice(0, LIMITS.notes),
+  }
+}
+
+/** The story already started from this item, matched by title ignoring case and spacing. */
+export function storyForItem<T extends { title: string }>(item: { title: string }, stories: T[]): T | undefined {
+  const k = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ')
+  return stories.find((s) => k(s.title) === k(item.title))
+}
