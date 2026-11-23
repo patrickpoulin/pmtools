@@ -3,6 +3,7 @@ import { useStore } from '../core/store'
 import { ITEM_LIMITS } from '../core/io'
 import { BacklogActions } from '../components/BacklogActions'
 import { BacklogResetActions } from '../components/BacklogResetActions'
+import { AiParse } from '../components/AiParse'
 
 export function BacklogPage() {
   const backlog = useStore((s) => s.backlog)
@@ -99,6 +100,8 @@ export function BacklogPage() {
         </p>
         <BacklogActions />
       </div>
+
+      <AiParse />
     </div>
   )
 }
