@@ -250,6 +250,9 @@ td input, td select { min-width: 72px; }
 
 details.about summary { cursor: pointer; font-weight: 600; }
 details.about ul { padding-left: 1.2em; margin: 6px 0 12px; }
+details.ai-parse > summary { cursor: pointer; }
+details.ai-parse > summary h2 { display: inline; margin: 0; }
+details.ai-parse h3 { font-size: 1rem; }
 
 .item-row td:first-child { width: 1%; white-space: nowrap; }
 .empty { text-align: center; padding: 32px 16px; color: var(--text-secondary); }
