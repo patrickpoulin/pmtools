@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { AI_PROMPT, isDuplicate, parseAiReply } from './aiParse'
+import { AI_PROMPT, draftStory, isDuplicate, parseAiReply } from './aiParse'
+import { LIMITS } from '../stories/story'
 import { ITEM_LIMITS } from './io'
 
 describe('parseAiReply', () => {
@@ -44,5 +45,53 @@ describe('AI_PROMPT', () => {
   it('asks for the fields the parser reads, and no scores', () => {
     for (const f of ['"title"', '"description"', '"isStory"', '"source"']) expect(AI_PROMPT).toContain(f)
     expect(AI_PROMPT).toMatch(/Do not add scores/)
+  })
+})
+
+describe('story parts', () => {
+  const reply = JSON.stringify([
+    {
+      title: 'Export CSV', description: 'Finance needs it.', isStory: true, source: 'Finance exports CSV. Approved only.',
+      story: {
+        role: 'As a finance approver', want: 'I want to export invoices.', benefit: 'so that I can reconcile',
+        criteria: [{ given: 'unapproved invoices', when: 'I export', then: 'they are left out' }, { given: ' ', when: '', then: '' }, 'junk'],
+      },
+    },
+    { title: 'Upgrade database', isStory: false, story: { role: '', want: '', benefit: '', criteria: [] } },
+  ])
+
+  it('reads the story parts without template words, and drops empty criteria and empty stories', () => {
+    const [a, b] = parseAiReply(reply)
+    expect(a.story).toEqual({
+      role: 'finance approver', want: 'to export invoices', benefit: 'I can reconcile',
+      criteria: [{ given: 'unapproved invoices', when: 'I export', then: 'they are left out' }],
+    })
+    expect(b.story).toBeUndefined()
+  })
+
+  it('drafts a story with the parts, and keeps the description and source in the notes', () => {
+    const [a] = parseAiReply(reply)
+    const draft = draftStory(a)
+    expect(draft).toMatchObject({ title: 'Export CSV', role: 'finance approver', want: 'to export invoices', benefit: 'I can reconcile' })
+    expect(draft.criteria).toHaveLength(1)
+    expect(draft.notes).toBe('Finance needs it.\n\nSource:\nFinance exports CSV. Approved only.')
+    expect(draft.points).toBeUndefined()
+  })
+
+  it('drafts a story from the title and notes alone when the AI gave no parts', () => {
+    const draft = draftStory({ title: 'Export CSV', description: '', source: '' })
+    expect(draft).toEqual({ title: 'Export CSV', notes: '' })
+  })
+
+  it('fits criteria to the story limits', () => {
+    const many = Array.from({ length: LIMITS.criteria + 3 }, () => ({ given: 'g'.repeat(3000), when: 'w', then: 't' }))
+    const [a] = parseAiReply(JSON.stringify([{ title: 'A', isStory: true, story: { criteria: many } }]))
+    expect(a.story?.criteria).toHaveLength(LIMITS.criteria)
+    expect(a.story?.criteria[0].given).toHaveLength(LIMITS.text)
+  })
+
+  it('asks for story parts but not points', () => {
+    for (const f of ['"role"', '"want"', '"benefit"', '"criteria"']) expect(AI_PROMPT).toContain(f)
+    expect(AI_PROMPT).toMatch(/story points/)
   })
 })
