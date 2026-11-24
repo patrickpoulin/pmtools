@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { downloadBlob } from '../core/io'
 import { usePersonas } from '../personas/store'
 import {
-  BUYING_ROLES, ICP_FIELDS, PERSONA_LIMITS, PERSONA_ROWS, hasPersonaMap, personaMapMarkdown, personaName,
+  BUYING_ROLES, EMPATHY_QUADRANTS, ICP_FIELDS, PERSONA_LIMITS, PERSONA_ROWS, hasPersonaMap, personaMapMarkdown, personaName,
   type BuyingRole, type Persona,
 } from '../personas/persona'
 
@@ -14,6 +14,8 @@ export function PersonasPage() {
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null)
   const [pdf, setPdf] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null })
   const [confirmClear, setConfirmClear] = useState(false)
+  const [params, setParams] = useSearchParams()
+  const empathy = params.get('view') === 'empathy'
 
   const copy = async () => {
     try {
@@ -100,14 +102,32 @@ export function PersonasPage() {
           <div>
             <h2 style={{ margin: 0 }}>Personas</h2>
             <p className="small muted" style={{ margin: '4px 0 0' }}>
-              The people at that company who buy, use or block your product. One column each, so you can compare them across.
+              {empathy
+                ? 'What each persona says, thinks, does and feels about the problem, so the team sees it from their side.'
+                : 'The people at that company who buy, use or block your product. One column each, so you can compare them across.'}
             </p>
           </div>
-          <button className="btn primary" disabled={personas.length >= PERSONA_LIMITS.personas} onClick={() => addPersona()}>
-            + Add persona
-          </button>
+          <div className="btn-row">
+            <div className="segmented" role="group" aria-label="View">
+              <button className={empathy ? '' : 'active'} aria-pressed={!empathy} onClick={() => setParams({}, { replace: true })}>
+                Grid
+              </button>
+              <button className={empathy ? 'active' : ''} aria-pressed={empathy} onClick={() => setParams({ view: 'empathy' }, { replace: true })}>
+                Empathy maps
+              </button>
+            </div>
+            <button className="btn primary" disabled={personas.length >= PERSONA_LIMITS.personas} onClick={() => addPersona()}>
+              + Add persona
+            </button>
+          </div>
         </div>
-        {personas.length ? (
+        {personas.length && empathy ? (
+          <div className="empathy-grid">
+            {personas.map((p) => (
+              <EmpathyMap key={p.id} persona={p} />
+            ))}
+          </div>
+        ) : personas.length ? (
           <div className="table-wrap">
             <table className="persona-grid">
               <thead>
@@ -242,6 +262,32 @@ function PersonaCell({ persona, field, label }: { persona: Persona; field: (type
   )
 }
 
+function EmpathyMap({ persona }: { persona: Persona }) {
+  const updatePersona = usePersonas((s) => s.updatePersona)
+  const name = personaName(persona)
+  return (
+    <section className="empathy-map" style={{ borderTopColor: `var(--series-${persona.color})` }} aria-label={`Empathy map: ${name}`}>
+      <h3>{name}</h3>
+      {persona.jobTitle.trim() && <p className="small muted" style={{ margin: '-6px 0 8px' }}>{persona.jobTitle}</p>}
+      <div className="empathy-quadrants">
+        {EMPATHY_QUADRANTS.map((q) => (
+          <label key={q.key} className="field empathy-quadrant">
+            {q.label}
+            <span className="small muted hint">{q.hint}</span>
+            <textarea
+              rows={3}
+              value={persona[q.key]}
+              maxLength={PERSONA_LIMITS.text}
+              placeholder={q.placeholder}
+              onChange={(e) => updatePersona(persona.id, { [q.key]: e.target.value })}
+            />
+          </label>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 /** Plain explainer of ICPs and personas, below the map. */
 function PersonaGuide() {
   return (
@@ -270,6 +316,12 @@ function PersonaGuide() {
           </ul>
         </div>
       </div>
+      <h3 style={{ marginTop: 12 }}>Empathy Maps</h3>
+      <p className="small">
+        The grid says who a persona is; an empathy map shows how the problem looks from their side. Fill each
+        quadrant from what you heard and saw in research. Gaps between what someone <strong>says</strong> and what
+        they <strong>do</strong> are often where the best product ideas are.
+      </p>
       <h3 style={{ marginTop: 12 }}>Buying Roles</h3>
       <div className="table-wrap">
         <table className="guide-table">
@@ -285,7 +337,7 @@ function PersonaGuide() {
       </div>
       <p className="small muted" style={{ margin: '16px 0 0' }}>
         Use your personas in the “As a…” part of your <Link to="/stories">user stories</Link>, so every story names
-        someone real.
+        someone real. Empathy maps were created by Dave Gray at XPLANE.
       </p>
     </section>
   )

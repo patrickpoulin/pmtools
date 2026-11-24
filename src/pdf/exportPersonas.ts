@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { PRINT_PALETTE } from '../methods/registry'
 import { ACCENT, CONTENT_W, INK, INK2, MX, PAGE_H, PAGE_W, RULE, drawFooter, lastTableY, pdfText } from './common'
-import { ICP_FIELDS, PERSONA_ROWS, buyingRoleLabel, personaName, type Persona, type PersonaMap } from '../personas/persona'
+import { EMPATHY_QUADRANTS, ICP_FIELDS, hasEmpathy, PERSONA_ROWS, buyingRoleLabel, personaName, type Persona, type PersonaMap } from '../personas/persona'
 
 const TOP = 56
 const BOTTOM = PAGE_H - 56
@@ -79,6 +79,34 @@ export function exportPersonasPdf(map: PersonaMap) {
       },
     })
     y = lastTableY(doc) + 16
+  }
+
+  const mapped = map.personas.filter(hasEmpathy)
+  if (mapped.length) {
+    doc.addPage()
+    y = TOP
+    heading('Empathy Maps')
+    for (const p of mapped) {
+      const [says, thinks, does, feels] = EMPATHY_QUADRANTS.map((q) => pdfText(`${q.label.toUpperCase()}\n${p[q.key].trim() || '-'}`))
+      autoTable(doc, {
+        startY: y,
+        margin,
+        // A two by two grid like on screen: says and thinks on top, does and feels below.
+        head: [[{ content: pdfText(personaName(p)), colSpan: 2 }]],
+        body: [[says, thinks], [does, feels]],
+        rowPageBreak: 'avoid',
+        alternateRowStyles: { fillColor: [255, 255, 255] },
+        styles: { font: 'helvetica', fontSize: 9, cellPadding: 7, textColor: INK, lineColor: RULE, lineWidth: 0.5, valign: 'top', minCellHeight: 56 },
+        headStyles: { fillColor: [244, 243, 239], textColor: INK, fontStyle: 'bold', minCellHeight: 0 },
+        columnStyles: { 0: { cellWidth: CONTENT_W / 2 }, 1: { cellWidth: CONTENT_W / 2 } },
+        didDrawCell: (data) => {
+          if (data.section !== 'head') return
+          doc.setFillColor(...hexRgb(PRINT_PALETTE.categorical[(p.color - 1) % 8]))
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, 3, 'F')
+        },
+      })
+      y = lastTableY(doc) + 16
+    }
   }
 
   drawFooter(doc)

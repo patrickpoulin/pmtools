@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  PERSONA_LIMITS, emptyIcp, emptyPersona, examplePersonaMap, hasPersonaMap, movePersona, nextColor,
+  PERSONA_LIMITS, emptyIcp, hasEmpathy, emptyPersona, examplePersonaMap, hasPersonaMap, movePersona, nextColor,
   normalizePersonaMap, personaMapMarkdown,
 } from './persona'
 import { loadPersonaMap } from './store'
@@ -88,6 +88,33 @@ describe('personaMapMarkdown', () => {
     expect(md).toContain('| | A \\| B |')
     expect(md).toContain('| **Goals** | one<br>two |')
     expect(md).toContain('Not written yet.')
+  })
+})
+
+describe('empathy maps', () => {
+  it('adds a section for personas with an empathy map, and skips the rest', () => {
+    const map = examplePersonaMap()
+    map.personas[2] = { ...map.personas[2], says: '', thinks: '', does: '', feels: '' }
+    const md = personaMapMarkdown(map)
+    expect(md).toContain('## Empathy Maps')
+    expect(md).toContain('### Olivia, Head of Operations')
+    expect(md).toContain('- **Feels:** Stretched thin')
+    expect(md).not.toContain('### Felix')
+  })
+
+  it('leaves the section out when no persona has one', () => {
+    const map = { icp: emptyIcp(), personas: [{ ...emptyPersona('a', []), name: 'A' }] }
+    expect(personaMapMarkdown(map)).not.toContain('Empathy Maps')
+    expect(hasEmpathy(map.personas[0])).toBe(false)
+  })
+
+  it('reads older saved personas without the quadrants', () => {
+    const out = normalizePersonaMap({ personas: [{ id: 'a', name: 'A', says: 7 }] }, newId)
+    expect(out.personas[0]).toMatchObject({ says: '', thinks: '', does: '', feels: '' })
+  })
+
+  it('counts a persona with only an empathy map as written', () => {
+    expect(hasPersonaMap({ icp: emptyIcp(), personas: [{ ...emptyPersona('a', []), feels: 'calm' }] })).toBe(true)
   })
 })
 

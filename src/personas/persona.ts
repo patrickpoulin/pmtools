@@ -29,6 +29,11 @@ export interface Persona {
   objections: string
   success: string
   channels: string
+  /** Empathy map quadrants. */
+  says: string
+  thinks: string
+  does: string
+  feels: string
 }
 
 export interface PersonaMap {
@@ -56,6 +61,18 @@ export const PERSONA_ROWS: { key: 'goals' | 'pains' | 'jobs' | 'objections' | 's
   { key: 'success', label: 'How They Measure Success', hint: 'The numbers or outcomes they are judged on.' },
   { key: 'channels', label: 'Where to Reach Them', hint: 'Communities, events, tools and people they trust.' },
 ]
+
+export type EmpathyKey = 'says' | 'thinks' | 'does' | 'feels'
+
+/** The four quadrants of an empathy map, in reading order (top left, top right, bottom left, bottom right). */
+export const EMPATHY_QUADRANTS: { key: EmpathyKey; label: string; hint: string; placeholder: string }[] = [
+  { key: 'says', label: 'Says', hint: 'Things they say out loud, ideally quotes from interviews.', placeholder: '“I spend every Monday morning fixing numbers.”' },
+  { key: 'thinks', label: 'Thinks', hint: 'What they worry about or hope for but might not say.', placeholder: 'Will leadership trust these numbers?' },
+  { key: 'does', label: 'Does', hint: 'What they actually do today: habits, workarounds, tools.', placeholder: 'Exports CSVs from 4 tools into one spreadsheet' },
+  { key: 'feels', label: 'Feels', hint: 'How they feel about the problem: frustrated, anxious, proud.', placeholder: 'Stressed before every leadership meeting' },
+]
+
+export const hasEmpathy = (p: Pick<Persona, EmpathyKey>) => EMPATHY_QUADRANTS.some((q) => p[q.key].trim())
 
 export const BUYING_ROLES: { value: BuyingRole; label: string; hint: string }[] = [
   { value: 'decision', label: 'Decision maker', hint: 'Signs off and owns the budget.' },
@@ -87,6 +104,10 @@ export const emptyPersona = (id: string, personas: Pick<Persona, 'color'>[]): Pe
   objections: '',
   success: '',
   channels: '',
+  says: '',
+  thinks: '',
+  does: '',
+  feels: '',
 })
 
 export const personaName = (p: Pick<Persona, 'name'>) => p.name.trim() || 'Unnamed persona'
@@ -94,7 +115,7 @@ export const personaName = (p: Pick<Persona, 'name'>) => p.name.trim() || 'Unnam
 export const hasIcp = (icp: Icp) => Object.values(icp).some((v) => v.trim())
 
 export const hasPersonaMap = (m: PersonaMap) =>
-  hasIcp(m.icp) || m.personas.some((p) => [p.name, p.jobTitle, ...PERSONA_ROWS.map((r) => p[r.key])].some((v) => v.trim()))
+  hasIcp(m.icp) || m.personas.some((p) => [p.name, p.jobTitle, ...PERSONA_ROWS.map((r) => p[r.key]), ...EMPATHY_QUADRANTS.map((q) => p[q.key])].some((v) => v.trim()))
 
 const text = (v: unknown, max = PERSONA_LIMITS.text) => (typeof v === 'string' ? v.slice(0, max) : '')
 const ROLE_VALUES = new Set<string>(BUYING_ROLES.map((b) => b.value))
@@ -126,6 +147,10 @@ export function normalizePersonaMap(raw: unknown, newId: () => string): PersonaM
       objections: text(p.objections),
       success: text(p.success),
       channels: text(p.channels),
+      says: text(p.says),
+      thinks: text(p.thinks),
+      does: text(p.does),
+      feels: text(p.feels),
     })
   }
   return { icp, personas }
@@ -161,6 +186,14 @@ export function personaMapMarkdown(m: PersonaMap): string {
     lines.push(`|---|${m.personas.map(() => '---').join('|')}|`)
     for (const [label, get] of rows) lines.push(`| **${label}** | ${m.personas.map((p) => cell(get(p))).join(' | ')} |`)
   }
+  const mapped = m.personas.filter(hasEmpathy)
+  if (mapped.length) {
+    lines.push('', '## Empathy Maps')
+    for (const p of mapped) {
+      lines.push('', `### ${personaName(p)}`, '')
+      for (const q of EMPATHY_QUADRANTS) lines.push(`- **${q.label}:** ${p[q.key].trim().replace(/\r?\n/g, ' ') || '-'}`)
+    }
+  }
   return lines.join('\n') + '\n'
 }
 
@@ -188,6 +221,10 @@ export const examplePersonaMap = (): PersonaMap => ({
       objections: 'Worried about another tool her team must maintain',
       success: 'Hours spent on reporting each week; leadership questions answered on the spot',
       channels: 'Ops communities on Slack, LinkedIn, peers at other startups',
+      says: '“Why does sales have a different number than finance?”',
+      thinks: 'If the board deck is wrong again, it reflects on me.',
+      does: 'Rebuilds the same spreadsheet every week and double-checks totals by hand',
+      feels: 'Stretched thin, and anxious before every leadership meeting',
     },
     {
       id: 'example-admin',
@@ -201,6 +238,10 @@ export const examplePersonaMap = (): PersonaMap => ({
       objections: 'Fears setup will eat a week of evenings',
       success: 'Time from sign-up to first useful report',
       channels: 'Product docs, YouTube tutorials, in-app help',
+      says: '“Is there a guide for people who aren’t engineers?”',
+      thinks: 'This is my chance to show I can own a project.',
+      does: 'Searches docs and forums at night, asks a friend on another team for help',
+      feels: 'Excited about the tool, nervous about breaking something',
     },
     {
       id: 'example-finance',
@@ -214,6 +255,10 @@ export const examplePersonaMap = (): PersonaMap => ({
       objections: 'Per-seat pricing that grows with every new hire',
       success: 'Software spend against budget',
       channels: 'Procurement reviews, vendor security questionnaires',
+      says: '“What will this cost us when the team doubles?”',
+      thinks: 'Another subscription nobody will cancel.',
+      does: 'Reviews renewals each quarter and asks for usage numbers before approving',
+      feels: 'Skeptical, but open if the pricing is predictable',
     },
   ],
 })
