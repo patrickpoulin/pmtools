@@ -107,55 +107,48 @@ export function PersonasPage() {
                 : 'The people at that company who buy, use or block your product. One column each, so you can compare them across.'}
             </p>
           </div>
-          <div className="btn-row">
-            <div className="segmented" role="group" aria-label="View">
-              <button className={empathy ? '' : 'active'} aria-pressed={!empathy} onClick={() => setParams({}, { replace: true })}>
-                Grid
-              </button>
-              <button className={empathy ? 'active' : ''} aria-pressed={empathy} onClick={() => setParams({ view: 'empathy' }, { replace: true })}>
-                Empathy maps
-              </button>
-            </div>
-            <button className="btn primary" disabled={personas.length >= PERSONA_LIMITS.personas} onClick={() => addPersona()}>
-              + Add persona
-            </button>
-          </div>
+          <button className="btn primary" disabled={personas.length >= PERSONA_LIMITS.personas} onClick={() => addPersona()}>
+            + Add persona
+          </button>
         </div>
-        {personas.length && empathy ? (
-          <div className="empathy-grid">
-            {personas.map((p) => (
-              <EmpathyMap key={p.id} persona={p} />
-            ))}
-          </div>
-        ) : personas.length ? (
-          <div className="table-wrap">
-            <table className="persona-grid">
-              <thead>
-                <tr>
-                  <th scope="col"><span className="visually-hidden">Attribute</span></th>
-                  {personas.map((p, i) => (
-                    <PersonaHead key={p.id} persona={p} index={i} count={personas.length} />
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {PERSONA_ROWS.map((row) => (
-                  <tr key={row.key}>
-                    <th scope="row">
-                      {row.label}
-                      <span className="small muted">{row.hint}</span>
-                    </th>
-                    {personas.map((p) => (
-                      <PersonaCell key={p.id} persona={p} field={row.key} label={row.label} />
+        <ViewTabs empathy={empathy} onChange={(e) => setParams(e ? { view: 'empathy' } : {}, { replace: true })} />
+        <div role="tabpanel" id={empathy ? 'persona-panel-empathy' : 'persona-panel-grid'} aria-labelledby={empathy ? 'persona-tab-empathy' : 'persona-tab-grid'}>
+          {personas.length && empathy ? (
+            <div className="empathy-grid">
+              {personas.map((p) => (
+                <EmpathyMap key={p.id} persona={p} />
+              ))}
+            </div>
+          ) : personas.length ? (
+            <div className="table-wrap">
+              <table className="persona-grid">
+                <thead>
+                  <tr>
+                    <th scope="col"><span className="visually-hidden">Attribute</span></th>
+                    {personas.map((p, i) => (
+                      <PersonaHead key={p.id} persona={p} index={i} count={personas.length} />
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="empty">No personas yet. Add the people who buy and use your product.</p>
-        )}
+                </thead>
+                <tbody>
+                  {PERSONA_ROWS.map((row) => (
+                    <tr key={row.key}>
+                      <th scope="row">
+                        {row.label}
+                        <span className="small muted">{row.hint}</span>
+                      </th>
+                      {personas.map((p) => (
+                        <PersonaCell key={p.id} persona={p} field={row.key} label={row.label} />
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="empty">No personas yet. Add the people who buy and use your product.</p>
+          )}
+        </div>
         {personas.length >= PERSONA_LIMITS.personas && (
           <p className="small muted" style={{ margin: '8px 0 0' }}>
             {PERSONA_LIMITS.personas} personas is the limit. Most teams focus on 3 to 5.
@@ -259,6 +252,40 @@ function PersonaCell({ persona, field, label }: { persona: Persona; field: (type
         onChange={(e) => updatePersona(persona.id, { [field]: e.target.value })}
       />
     </td>
+  )
+}
+
+const TABS = [
+  { empathy: false, id: 'grid', label: 'Persona Grid', hint: 'Who they are, side by side' },
+  { empathy: true, id: 'empathy', label: 'Empathy Maps', hint: 'Says, thinks, does, feels' },
+]
+
+/** The two views of the personas, as tabs. Arrow keys move between them, as in any tab list. */
+function ViewTabs({ empathy, onChange }: { empathy: boolean; onChange: (empathy: boolean) => void }) {
+  return (
+    <div className="view-tabs" role="tablist" aria-label="Persona views">
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          id={`persona-tab-${t.id}`}
+          role="tab"
+          aria-selected={t.empathy === empathy}
+          aria-controls={`persona-panel-${t.id}`}
+          tabIndex={t.empathy === empathy ? 0 : -1}
+          className={t.empathy === empathy ? 'active' : ''}
+          onClick={() => onChange(t.empathy)}
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+            e.preventDefault()
+            onChange(!t.empathy)
+            document.getElementById(`persona-tab-${t.empathy ? 'grid' : 'empathy'}`)?.focus()
+          }}
+        >
+          {t.label}
+          <span className="small">{t.hint}</span>
+        </button>
+      ))}
+    </div>
   )
 }
 
