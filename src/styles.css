@@ -342,3 +342,17 @@ details.ai-parse h3 { font-size: 1rem; }
 .story-list-head h2 { margin: 0; padding: 0; }
 .story-list-head .btn { padding: 4px 10px; }
 .story-example-btn { margin-top: 8px; width: 100%; justify-content: flex-start; white-space: normal; text-align: left; font-size: 0.85rem; color: var(--accent-ink); }
+
+/* Persona map */
+textarea.short { min-height: 56px; }
+.persona-grid { table-layout: fixed; min-width: 100%; width: max-content; }
+.persona-grid th, .persona-grid td { vertical-align: top; text-transform: none; letter-spacing: normal; white-space: normal; }
+.persona-grid tbody th { width: 180px; min-width: 180px; font-size: 0.85rem; color: var(--text-primary); }
+.persona-grid tbody th span { display: block; font-weight: 400; margin-top: 2px; }
+.persona-grid thead th:first-child, .persona-grid tbody th { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+.persona-grid thead th:not(:first-child) { width: 240px; min-width: 240px; border-top: 4px solid var(--border); padding-top: 10px; }
+.persona-grid td textarea { min-height: 84px; }
+.persona-head { display: grid; gap: 6px; font-size: 0.9rem; font-weight: 400; color: var(--text-primary); }
+.persona-head .persona-name { font-weight: 700; }
+.persona-actions { gap: 2px; }
+@media (max-width: 720px) { .persona-grid tbody th { width: 120px; min-width: 120px; } }

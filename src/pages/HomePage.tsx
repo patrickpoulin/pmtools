@@ -20,6 +20,25 @@ export function HomePage() {
         </div>
       </section>
 
+      <section className="grid-2">
+        <div className="card">
+          <h2>Map Your Personas</h2>
+          <p className="muted small">
+            Start with who you build for: your Ideal Customer Profile, then the people inside it, side by side. Goals,
+            pains, jobs to be done, objections and who signs off.
+          </p>
+          <Link className="btn" to="/personas">Map your personas</Link>
+        </div>
+        <div className="card">
+          <h2>Write User Stories</h2>
+          <p className="muted small">
+            Planning something new? Write it as a story the team can build and test: who it’s for, what they need and
+            why, Given / When / Then acceptance criteria, and an INVEST check that flags common problems as you type.
+          </p>
+          <Link className="btn" to="/stories">Write a user story</Link>
+        </div>
+      </section>
+
       <section className="method-grid">
         {METHODS.map(({ id, name, tagline, bestFor, Chart }) => (
           <Link key={id} to={`/method/${id}`} className="card method-card">
@@ -31,15 +50,6 @@ export function HomePage() {
             <p className="muted" style={{ margin: 0 }}>{tagline}</p>
           </Link>
         ))}
-      </section>
-
-      <section className="card">
-        <h2>Write User Stories</h2>
-        <p className="muted small">
-          Planning something new? Write it as a story the team can build and test: who it’s for, what they need and
-          why, Given / When / Then acceptance criteria, and an INVEST check that flags common problems as you type.
-        </p>
-        <Link className="btn" to="/stories">Write a user story</Link>
       </section>
 
       <section className="card">

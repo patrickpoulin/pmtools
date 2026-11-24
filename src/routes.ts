@@ -56,6 +56,12 @@ export const PAGES: PageMeta[] = [
     description: 'See how each item ranks under every prioritization method and spot where they disagree.',
   },
   {
+    path: 'personas/',
+    title: 'Persona Map and ICP Template — PM Tools',
+    description:
+      'Map your Ideal Customer Profile and buyer personas side by side: goals, pains, jobs to be done, objections and buying roles. Free, private, with PDF export.',
+  },
+  {
     path: 'stories/',
     title: 'User Story Writer — PM Tools',
     description:
