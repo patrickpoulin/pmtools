@@ -9,6 +9,7 @@ import { BacklogPage } from './pages/BacklogPage'
 import { MethodPage } from './pages/MethodPage'
 import { ComparePage } from './pages/ComparePage'
 import { ImportPage } from './pages/ImportPage'
+import { PersonasPage } from './pages/PersonasPage'
 import { StoriesPage } from './pages/StoriesPage'
 
 const REPO_URL = 'https://github.com/patrickpoulin/pmtools'
@@ -33,6 +34,17 @@ export function App() {
           </Link>
           <nav className="nav" aria-label="Main">
             <NavMenu
+              label="Planning"
+              sections={[
+                {
+                  links: [
+                    { to: '/personas', label: 'Persona Map' },
+                    { to: '/stories', label: 'User Stories' },
+                  ],
+                },
+              ]}
+            />
+            <NavMenu
               label="Prioritization"
               sections={[
                 { heading: '1. Start Here', links: [{ to: '/backlog', label: 'Backlog' }] },
@@ -43,7 +55,6 @@ export function App() {
                 { heading: '3. Decide', links: [{ to: '/compare', label: 'Compare Methods' }] },
               ]}
             />
-            <NavMenu label="Planning" sections={[{ links: [{ to: '/stories', label: 'User Stories' }] }]} />
           </nav>
           <ThemeToggle />
         </div>
@@ -54,6 +65,7 @@ export function App() {
           <Route path="/backlog" element={<BacklogPage />} />
           <Route path="/method/:id" element={<MethodPage />} />
           <Route path="/compare" element={<ComparePage />} />
+          <Route path="/personas" element={<PersonasPage />} />
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="*" element={<HomePage />} />
